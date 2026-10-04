@@ -1,0 +1,18 @@
+id = "kris.tools"
+name = "Kris tools"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Personal panes: lazygit in a tab, worktree setup hook"
+platforms = ["macos"]
+
+[[panes]]
+id = "lazygit"
+title = "git"
+placement = "tab"
+# If lazygit crashes, keep the tab open long enough to read why
+command = ["/bin/zsh", "-c", "/opt/homebrew/bin/lazygit || { echo; echo 'lazygit exited with an error. Press any key to close.'; read -k1 }"]
+
+# New worktree: run ~/.config/herdr/worktree-setup/<repo>.sh + agent, add a lazygit tab
+[[events]]
+on = "worktree.created"
+command = ["/bin/sh", "-c", "exec /bin/sh \"$HOME/.config/herdr/scripts/worktree-created.sh\""]

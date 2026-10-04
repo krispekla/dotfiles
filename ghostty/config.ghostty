@@ -1,0 +1,62 @@
+# herdr runs inside Ghostty. cmd shortcuts below send herdr's prefix (ctrl+b = \x02)
+# followed by the action key, mirroring VS Code muscle memory.
+# Mapping lives in ~/.config/herdr/config.toml (prefix+? in herdr lists everything).
+
+# Projects / agents
+# cmd+r: herdr workspace picker (j/k move, Enter switches)
+keybind = super+r=text:\x02w
+# cmd+k / cmd+j: previous / next workspace, switches immediately
+keybind = super+k=text:\x02u
+keybind = super+j=text:\x02m
+# cmd+i: jump to the agent waiting on you (blocked first, then finished)
+keybind = super+i=text:\x02i
+# cmd+shift+i: Goto picker listing every agent; j/k move, Enter jumps, b = only blocked ones
+keybind = super+shift+i=text:\x02g
+
+# Tabs
+keybind = super+t=text:\x02c
+keybind = super+shift+[=text:\x02p
+keybind = super+shift+]=text:\x02n
+keybind = super+1=text:\x021
+keybind = super+2=text:\x022
+keybind = super+3=text:\x023
+keybind = super+4=text:\x024
+keybind = super+5=text:\x025
+keybind = super+6=text:\x026
+keybind = super+7=text:\x027
+keybind = super+8=text:\x028
+keybind = super+9=text:\x029
+
+# Panes
+keybind = super+d=text:\x02v
+keybind = super+shift+d=text:\x02-
+keybind = super+w=text:\x02x
+keybind = super+l>super+t=text:\x02z
+
+# UI / tools
+keybind = super+e=text:\x02b
+keybind = super+g=text:\x02t
+keybind = super+l>super+e=text:\x02f
+
+# Worktree flow (custom herdr commands; override Ghostty's search-previous and paste-from-selection)
+# cmd+shift+g: new worktree (type the branch name) → chat | git | code | terminal tabs
+keybind = super+shift+g=text:\x02G
+# cmd+shift+c / cmd+shift+v: new chat tab (Claude) / new code tab (nvim .)
+keybind = super+shift+c=text:\x02C
+keybind = super+shift+v=text:\x02V
+# cmd+shift+e: edit this repo's worktree setup commands
+keybind = super+shift+e=text:\x02E
+# cmd+shift+h: keys cheatsheet
+keybind = super+shift+h=text:\x02H
+
+# Font trial
+# font-family = "Atkinson Hyperlegible Mono"
+# font-variation = wght=400
+# font-variation-bold = wght=700
+
+# Readability
+font-size = 13
+adjust-cell-height = 15%
+
+# Theme (matches herdr, LazyVim, lazygit)
+theme = "Catppuccin Mocha"

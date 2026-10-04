@@ -1,0 +1,65 @@
+ KEYS — cmd = Ghostty shortcut · ^b = ctrl+b prefix · q to close
+ ═══════════════════════════════════════════════════════════════════
+
+ ★ DAILY TOP 10
+   cmd+shift+g    new worktree  (type branch: feat/xyz) → chat|git|code|terminal
+   cmd+i          jump to agent waiting on you
+   cmd+r          workspace picker (j/k, Enter)
+   cmd+k / cmd+j  previous / next workspace
+   cmd+1..9       go to tab N
+   cmd+shift+c    new chat tab (Claude)
+   cmd+shift+v    new code tab (nvim .)
+   cmd+g          git tab (lazygit)
+   cmd+t          new tab (plain terminal)
+   ^b ?           herdr: list every binding
+
+ ── WORKSPACES / AGENTS ────────────────────────────────────────────
+   cmd+shift+i    goto picker: all agents (b = blocked only)
+   ctrl+k/ctrl+j  previous / next agent (all workspaces)
+   ^b shift+w     rename workspace
+   cmd+shift+e    edit this repo's worktree setup commands
+
+ ── TABS ───────────────────────────────────────────────────────────
+   cmd+shift+[ ]  previous / next tab       (also ctrl+h / ctrl+l)
+
+ ── PANES ──────────────────────────────────────────────────────────
+   cmd+d          split right
+   cmd+shift+d    split down
+   cmd+w          close pane
+   ctrl+alt+hjkl  move between panes
+   cmd+l cmd+t    zoom pane (toggle)
+
+ ── UI / TOOLS ─────────────────────────────────────────────────────
+   cmd+e          toggle sidebar
+   cmd+l cmd+e    lf file browser (popup)
+   cmd+shift+h    this cheatsheet
+
+ ── NVIM (LazyVim) — space = leader, wait after space for a menu ───
+   space space    find file           space /     search in project
+   space e        file tree           space g g   lazygit
+   gd             go to definition    K           type / docs
+   i … esc        type … stop         :w  :q      save  quit
+   :LspRestart    fix stale TypeScript errors
+
+ ── LAZYGIT ────────────────────────────────────────────────────────
+   space          stage / unstage     c           commit
+   P              push                p           pull
+   e              edit file in nvim   ?           all keys     q quit
+
+ ── HUNK (review diffs) ─────────────────────────────────────────────
+   hunk diff --watch review changes live while Claude edits (terminal tab)
+   hunk diff main    review the whole branch vs main
+   { / }             previous / next note
+   then ask Claude:  "walk me through this change in hunk"
+
+ ── SHELL (fzf) ─────────────────────────────────────────────────────
+   ctrl+r         fuzzy search command history
+   ctrl+t         fuzzy pick a file path into the command
+   in the list:   type to filter · arrows or ctrl+n/ctrl+p move · Enter picks
+
+ ── FILES ──────────────────────────────────────────────────────────
+   ~/.config/herdr/config.toml               herdr keys
+   ~/.config/herdr/worktree-setup/<repo>.sh  per-repo setup (cmd+shift+e)
+   ~/.config/herdr/agent                     which agent chat tabs run
+   ~/.config/herdr/cheatsheet.txt            this file
+   Ghostty: ~/Library/Application Support/com.mitchellh.ghostty/config.ghostty

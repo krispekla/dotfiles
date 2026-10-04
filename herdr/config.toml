@@ -1,0 +1,96 @@
+onboarding = false
+
+[ui.toast]
+delivery = "system"
+
+[theme]
+name = "catppuccin"
+auto_switch = false
+
+# Modifier layers:
+#   alt       -> AeroSpace (OS windows)
+#   ctrl+alt  -> herdr panes (direct, works in any terminal / over --remote)
+#   cmd       -> Ghostty translates VS Code-style shortcuts into prefix sequences
+#   ctrl+b    -> prefix fallback for rare actions (prefix+? shows all)
+[keys]
+focus_pane_left = ["prefix+h", "ctrl+alt+h"]
+focus_pane_down = ["prefix+j", "ctrl+alt+j"]
+focus_pane_up = ["prefix+k", "ctrl+alt+k"]
+focus_pane_right = ["prefix+l", "ctrl+alt+l"]
+# Switch workspace immediately (Ghostty: cmd+k up / cmd+j down, sidebar order)
+previous_workspace = "prefix+u"
+next_workspace = "prefix+m"
+
+# Step through agents across all workspaces
+previous_agent = "ctrl+k"
+next_agent = ["prefix+a", "ctrl+j"]
+# Tabs like VS Code's previous/next editor
+previous_tab = ["prefix+p", "ctrl+h"]
+next_tab = ["prefix+n", "ctrl+l"]
+
+# Workspace picker (cmd+r / prefix+w): j/k move through the list.
+# Pane up/down in navigate mode moves to ctrl+alt+j/k so j/k are free for this.
+navigate_workspace_up = ["up", "k"]
+navigate_workspace_down = ["down", "j"]
+navigate_pane_up = "ctrl+alt+k"
+navigate_pane_down = "ctrl+alt+j"
+
+# cmd+g in Ghostty: lazygit in a "git" tab (reused if already open)
+[[keys.command]]
+key = "prefix+t"
+type = "shell"
+command = "~/.config/herdr/scripts/lazygit-tab.sh"
+description = "lazygit tab"
+
+# cmd+i in Ghostty: jump to the agent waiting on you (blocked, then done)
+[[keys.command]]
+key = "prefix+i"
+type = "shell"
+command = "~/.config/herdr/scripts/next-waiting-agent.sh"
+description = "next waiting agent"
+
+# cmd+l cmd+e in Ghostty
+[[keys.command]]
+key = "prefix+f"
+type = "popup"
+command = "lf"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+shift+c"
+type = "shell"
+command = "~/.config/herdr/scripts/run-in-tab.sh chat \"$(cat ~/.config/herdr/agent)\""
+description = "agent in new chat tab"
+
+[[keys.command]]
+key = "prefix+shift+v"
+type = "shell"
+command = "~/.config/herdr/scripts/run-in-tab.sh code \"nvim .\""
+description = "nvim in new code tab"
+
+[[keys.command]]
+key = "prefix+shift+e"
+type = "popup"
+command = "~/.config/herdr/scripts/edit-worktree-setup.sh"
+description = "edit worktree setup for this repo"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+shift+h"
+type = "popup"
+command = "less -R ~/.config/herdr/cheatsheet.txt"
+description = "cheatsheet"
+width = "80%"
+height = "90%"
+
+# Agent rows: second line shows what the session is about (Claude's terminal title) instead of "claude"
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "workspace", "tab"],
+  ["terminal_title_stripped"],
+]
+
+[ui]
+status_indicators = "symbols"

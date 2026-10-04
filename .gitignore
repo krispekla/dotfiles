@@ -1,0 +1,12 @@
+# Runtime/state files that must never land here
+*.log
+*.sock*
+*.bak*
+.DS_Store
+session.json
+session-snapshots/
+plugins.json
+.plugins.lock
+
+# Per-machine, per-repo herdr worktree setup scripts
+herdr/worktree-setup/
