@@ -74,6 +74,8 @@ done < <(entries)
 
 if [ "$check" = 0 ]; then
   mkdir -p "$HOME/.config/herdr/worktree-setup"
+  # Secret and home-path check before every commit in this repo
+  git -C "$REPO" config core.hooksPath .githooks
   [ -d "$BACKUP" ] && echo "Backups: $BACKUP"
 fi
 if [ "$differs" -gt 0 ]; then
