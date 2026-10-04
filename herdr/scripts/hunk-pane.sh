@@ -20,15 +20,18 @@ info=$("$herdr" pane get "$pane")
 tab=$(echo "$info" | jq -r '.result.pane.tab_id')
 cwd=$(echo "$info" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd')
 
-# Already a hunk pane in this tab: close it
-for p in $("$herdr" pane list | jq -r --arg t "$tab" '.result.panes[] | select(.tab_id == $t) | .pane_id'); do
-  if "$herdr" pane process-info --pane "$p" | jq -e '
-      [.result.process_info.foreground_processes[]? | (.argv0 // ""), (.name // "")]
-      | any(test("(^|/)hunk$"))' >/dev/null; then
-    "$herdr" pane close "$p" >/dev/null
+# The pane this script opened in this tab is remembered, so a second press closes it
+# even while hunk is still starting
+state="${TMPDIR:-/tmp}/herdr-hunk-pane-$(echo "$tab" | tr -c 'A-Za-z0-9\n' '_')"
+if [ -f "$state" ]; then
+  # Stored as terminal id, unique even if pane ids get reused after a herdr restart
+  term=$(cat "$state"); rm -f "$state"
+  open=$("$herdr" pane list | jq -r --arg t "$term" '.result.panes[] | select(.terminal_id == $t) | .pane_id' | head -n 1)
+  if [ -n "$open" ]; then
+    "$herdr" pane close "$open" >/dev/null
     exit 0
   fi
-done
+fi
 
 if ! git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   "$herdr" notification show "hunk: not a git repo" --body "$cwd" --sound none >/dev/null
@@ -36,7 +39,7 @@ if ! git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 split=$("$herdr" pane split "$pane" --direction right --cwd "$cwd" --no-focus)
-echo "$split"
 new=$(echo "$split" | jq -r '.result.pane.pane_id')
 # exec: quitting hunk ends the shell, so the pane closes
+echo "$split" | jq -r '.result.pane.terminal_id' > "$state"
 "$herdr" pane run "$new" "exec hunk diff --watch" >/dev/null
