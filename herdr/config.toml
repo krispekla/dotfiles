@@ -49,6 +49,13 @@ type = "shell"
 command = "~/.config/herdr/scripts/next-waiting-agent.sh"
 description = "next waiting agent"
 
+# cmd+shift+r in Ghostty: toggle hunk live diff in a pane on the right (review while the agent works)
+[[keys.command]]
+key = "prefix+shift+r"
+type = "shell"
+command = "~/.config/herdr/scripts/hunk-pane.sh"
+description = "toggle hunk live diff pane"
+
 # cmd+l cmd+e in Ghostty
 [[keys.command]]
 key = "prefix+f"
