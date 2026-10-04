@@ -21,6 +21,7 @@ The repo holds the *workflow*, not machine state. It has no repo names, no absol
 | `claude/settings.json` | `~/.claude/settings.json` | Claude Code settings (status line, effort, notifications) |
 | `claude/statusline.sh` | `~/.claude/statusline.sh` | Status line: project, branch, model/effort, context + usage meters |
 | `shell/.zshenv` | `~/.zshenv` | `EDITOR=nvim` (+ cargo env if present) |
+| `shell/essentials.zsh` | `~/.config/zsh/essentials.zsh` | Only the shell bits this setup needs: herdr/claude/hunk on `PATH`, fzf keys. Loaded from `~/.zshrc` |
 | `aerospace/aerospace.toml` | `~/.config/aerospace/aerospace.toml` | Tiling window manager, `alt` layer |
 | `Brewfile` | — | Tools the above needs |
 
@@ -36,7 +37,8 @@ Config files are **symlinked** to this repo. A change to your live config shows 
    - **herdr**: `curl -fsSL https://herdr.dev/install.sh | sh`. It installs to `~/.local/bin`, so that needs to be on your `PATH`. Update later with `herdr update`.
    - **hunk**: `curl -fsSL https://hunk.dev/install.sh | sh`. It installs to `~/.hunk/bin` and adds that to `PATH` in `~/.zshrc`. Update later with `hunk update`.
    - **Claude Code**
-3. `./install.sh --check`: shows every file as `linked` / `same` / `missing` / `differs`, with diffs. Changes nothing.
+3. `./install.sh --check`: shows every file as `linked` / `same` / `missing` / `differs`, with diffs, then a **Requirements** list:
+   tools on `PATH`, fzf keys, `EDITOR`, apps, herdr plugin + Claude integration, and the commit check. Each one is `ok` or `missing` with the fix. Changes nothing.
 4. If anything differs, merge it first. The easiest way is to open Claude in this repo; `CLAUDE.md` tells it how.
 5. `./install.sh`: links what's safe, skips what still differs, backs up anything it replaces to `~/.dotfiles-backup/<timestamp>/`. Safe to run again.
    It also turns on the repo's pre-commit check (see Safeguards).
@@ -44,8 +46,10 @@ Config files are **symlinked** to this repo. A change to your live config shows 
    `herdr plugin link ~/.config/herdr/plugins/kris-tools`
 7. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
    `herdr integration install claude`
-8. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
-9. `herdr server reload-config` (or restart herdr).
+8. Add one line to the end of `~/.zshrc` (the rest of `.zshrc` stays per machine and out of this repo):
+   `[ -f ~/.config/zsh/essentials.zsh ] && source ~/.config/zsh/essentials.zsh`
+9. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
+10. `herdr server reload-config` (or restart herdr). Run `./install.sh --check` again: everything should be `ok`.
 
 Live config points at whatever branch is checked out here. Keep this repo on `main` day to day.
 

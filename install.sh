@@ -30,6 +30,7 @@ lazygit/config.yml|Library/Application Support/lazygit/config.yml|link
 hunk/config.toml|.config/hunk/config.toml|link
 claude/statusline.sh|.claude/statusline.sh|link
 shell/.zshenv|.zshenv|link
+shell/essentials.zsh|.config/zsh/essentials.zsh|link
 claude/settings.json|.claude/settings.json|merge
 aerospace/aerospace.toml|.config/aerospace/aerospace.toml|merge
 EOF
@@ -46,6 +47,26 @@ same() { # identical content, file or directory
 backup() {
   mkdir -p "$(dirname "$BACKUP/$1")"
   mv "$HOME/$1" "$BACKUP/$1"
+}
+
+requirements() { # fresh login + interactive zsh, like a new terminal: PATH and fzf come only from your zsh config
+  env -i HOME="$HOME" USER="${USER:-}" TERM="${TERM:-xterm-256color}" PATH=/usr/bin:/bin:/usr/sbin:/sbin zsh -lic '
+    r() { if eval "$2" >/dev/null 2>&1; then echo "REQ ok       $1"; else echo "REQ missing  $1  ($3)"; fi; }
+    for c in herdr hunk claude nvim lazygit jq gh lf fzf rg fd gitleaks; do
+      r "$c" "command -v $c" "see README install steps"
+    done
+    r "fzf keys (ctrl+r, ctrl+t)" "(( \$+functions[fzf-history-widget] ))" "load ~/.config/zsh/essentials.zsh from ~/.zshrc"
+    r "EDITOR=nvim" "[ \"\$EDITOR\" = nvim ]" "link shell/.zshenv"
+    r "Ghostty.app" "[ -d /Applications/Ghostty.app ]" "download from ghostty.org"
+    r "AeroSpace.app" "[ -d /Applications/AeroSpace.app ]" "brew bundle"
+    r "herdr plugin kris.tools" "herdr plugin list | grep -q kris.tools" "herdr plugin link ~/.config/herdr/plugins/kris-tools"
+    r "herdr Claude integration" "herdr integration status | grep -q \"^claude: current\"" "herdr integration install claude"
+  ' </dev/null 2>/dev/null | sed -n 's/^REQ //p'
+  if [ "$(git -C "$REPO" config core.hooksPath)" = .githooks ]; then
+    echo "ok       pre-commit check (gitleaks + home paths)"
+  else
+    echo "missing  pre-commit check  (run ./install.sh)"
+  fi
 }
 
 differs=0
@@ -77,6 +98,11 @@ if [ "$check" = 0 ]; then
   # Secret and home-path check before every commit in this repo
   git -C "$REPO" config core.hooksPath .githooks
   [ -d "$BACKUP" ] && echo "Backups: $BACKUP"
+fi
+if [ "$check" = 1 ]; then
+  echo
+  echo "Requirements:"
+  requirements | sed 's/^/  /'
 fi
 if [ "$differs" -gt 0 ]; then
   echo
