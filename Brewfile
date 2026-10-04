@@ -11,6 +11,9 @@ brew "gh"
 # Used by herdr scripts and the Claude status line
 brew "jq"
 
+# Blocks commits with secrets in this repo (.githooks/pre-commit)
+brew "gitleaks"
+
 # herdr popup file browser (prefix+f) and shell fuzzy search
 brew "lf"
 brew "fzf"

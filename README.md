@@ -38,14 +38,28 @@ Config files are **symlinked** to this repo. A change to your live config shows 
 3. `./install.sh --check`: shows every file as `linked` / `same` / `missing` / `differs`, with diffs. Changes nothing.
 4. If anything differs, merge it first. The easiest way is to open Claude in this repo; `CLAUDE.md` tells it how.
 5. `./install.sh`: links what's safe, skips what still differs, backs up anything it replaces to `~/.dotfiles-backup/<timestamp>/`. Safe to run again.
-6. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
+   It also turns on the repo's pre-commit check (see Safeguards).
+6. Register the herdr plugin (herdr keeps its own copy, `plugins.json`; re-run after editing the manifest):
+   `herdr plugin link ~/.config/herdr/plugins/kris-tools`
+7. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
    `herdr integration install claude`
-7. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
-8. `herdr server reload-config` (or restart herdr).
+8. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
+9. `herdr server reload-config` (or restart herdr).
+
+Live config points at whatever branch is checked out here. Keep this repo on `main` day to day.
 
 **Not linked, merged by hand** (`merge` in `install.sh`). These are copied in only if missing:
 - `aerospace.toml`, because display/monitor setup differs per machine.
 - `claude/settings.json`, because herdr and Claude Code write into it.
+
+## Safeguards
+
+Linked files write straight into this repo, so a secret or a `/Users/<name>/…` path added to a live config shows up here too. `.githooks/pre-commit` blocks the commit if either reaches staged changes:
+- **Secrets**: [gitleaks](https://github.com/gitleaks/gitleaks) scans for tokens, API keys and private keys. If gitleaks is missing, the commit is refused.
+- **Home paths**: any `/Users/<name>` in an added line. Use `~` or `$HOME` instead.
+
+Where secrets and machine-specific values go instead (never in the repo):
+- **Shell**: `~/.zshenv.local`, loaded by `shell/.zshenv` if it exists. Put API keys and per-machine exports there.
 
 ## Per-machine things (not in the repo)
 
