@@ -49,6 +49,15 @@ type = "shell"
 command = "~/.config/herdr/scripts/next-waiting-agent.sh"
 description = "next waiting agent"
 
+# cmd+/ in Ghostty: menu of the custom commands, one letter runs one
+[[keys.command]]
+key = "prefix+/"
+type = "popup"
+command = "~/.config/herdr/scripts/menu.sh"
+description = "menu: custom commands"
+width = "60%"
+height = "60%"
+
 # cmd+shift+r in Ghostty: toggle hunk live diff in a pane on the right (review while the agent works)
 [[keys.command]]
 key = "prefix+shift+r"
