@@ -2,6 +2,7 @@
  ═══════════════════════════════════════════════════════════════════
 
  ★ DAILY
+   cmd+/          menu: Claude, nvim, lazygit, hunk, … (one letter runs)
    cmd+shift+g    new worktree  (type branch: feat/xyz) → chat|git|code|terminal
    cmd+i          jump to agent waiting on you
    cmd+r          workspace picker (j/k, Enter)

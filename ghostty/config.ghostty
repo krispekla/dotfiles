@@ -48,6 +48,8 @@ keybind = super+shift+v=text:\x02V
 keybind = super+shift+e=text:\x02E
 # cmd+shift+r: toggle hunk live diff pane on the right (review what the agent is changing)
 keybind = super+shift+r=text:\x02R
+# cmd+/: menu of the custom commands (Claude, nvim, lazygit, hunk, …), one letter runs one
+keybind = super+slash=text:\x02/
 # cmd+shift+h: keys cheatsheet
 keybind = super+shift+h=text:\x02H
 
