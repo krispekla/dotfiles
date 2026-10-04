@@ -26,22 +26,26 @@ The repo holds the *workflow*, not machine state. It has no repo names, no absol
 
 Theme everywhere: Catppuccin (Mocha).
 
-## Install on a new Mac
+## Install on a Mac
 
-`install.sh` doesn't exist yet. Until it does, copy or symlink each file using the table above.
+Config files are **symlinked** to this repo. A change to your live config shows up in `git status` here. Keep the repo where you cloned it: moving it breaks the links.
 
 1. Install [Homebrew](https://brew.sh), then the tools: `brew bundle --file=Brewfile`
 2. Install the tools that aren't on Homebrew:
    - **herdr**: see [herdr.dev](https://herdr.dev). Its binary goes in `~/.local/bin`
    - **hunk**: its installer puts the binary in `~/.hunk/bin`. Make sure that's on your `PATH`
    - **Claude Code**
-3. Put each config file in place (table above). Make the scripts executable:
-   `chmod +x ~/.config/herdr/scripts/*.sh ~/.claude/statusline.sh`
-4. Create the per-repo setup folder: `mkdir -p ~/.config/herdr/worktree-setup`
-5. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
+3. `./install.sh --check`: shows every file as `linked` / `same` / `missing` / `differs`, with diffs. Changes nothing.
+4. If anything differs, merge it first. The easiest way is to open Claude in this repo; `CLAUDE.md` tells it how.
+5. `./install.sh`: links what's safe, skips what still differs, backs up anything it replaces to `~/.dotfiles-backup/<timestamp>/`. Safe to run again.
+6. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
    `herdr integration install claude`
-6. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
-7. `herdr server reload-config` (or restart herdr).
+7. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
+8. `herdr server reload-config` (or restart herdr).
+
+**Not linked, merged by hand** (`merge` in `install.sh`). These are copied in only if missing:
+- `aerospace.toml`, because display/monitor setup differs per machine.
+- `claude/settings.json`, because herdr and Claude Code write into it.
 
 ## Per-machine things (not in the repo)
 
