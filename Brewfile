@@ -1,5 +1,5 @@
 # Tools this setup needs. Install with: brew bundle --file=Brewfile
-# herdr and hunk are not on Homebrew — see README.
+# Ghostty, herdr and hunk are installed separately — see README.
 
 tap "nikitabobko/tap"
 
@@ -23,8 +23,7 @@ brew "ripgrep"
 brew "fd"
 brew "node"
 
-# Apps
-cask "ghostty"
+# Apps (Ghostty is downloaded manually — see README)
 cask "nikitabobko/tap/aerospace"
 
 # Fonts
