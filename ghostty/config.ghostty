@@ -46,6 +46,8 @@ keybind = super+shift+c=text:\x02C
 keybind = super+shift+v=text:\x02V
 # cmd+shift+e: edit this repo's worktree setup commands
 keybind = super+shift+e=text:\x02E
+# cmd+shift+r: toggle hunk live diff pane on the right (review what the agent is changing)
+keybind = super+shift+r=text:\x02R
 # cmd+shift+h: keys cheatsheet
 keybind = super+shift+h=text:\x02H
 
