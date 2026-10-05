@@ -86,10 +86,12 @@ remove_worktree() {
   root=$(dirname "$common")
   # Detached: closing the workspace also closes this popup. The branch is deleted only if
   # git sees it as merged (branch -d); otherwise it's kept.
+  # Its port goes back to the pool (worktree-port.sh).
   nohup sh -c '
-    "$1" worktree remove --workspace "$2" $3 >/dev/null &&
-      [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
-  ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" >/dev/null 2>&1 &
+    "$1" worktree remove --workspace "$2" $3 >/dev/null || exit
+    "$6/worktree-port.sh" free "$7"
+    [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
+  ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" "$S" "$top" >/dev/null 2>&1 &
   sleep 1
 }
 

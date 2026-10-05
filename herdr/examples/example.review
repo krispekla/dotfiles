@@ -1,9 +1,11 @@
 # Copy to ~/.config/herdr/worktree-setup/<repo>.review (<repo> = the main checkout's folder name).
 # Extra tabs for review worktrees (cmd+/ R). One tab per line:  name | command
-#   {port}    a free port from 3100 up, so it never clashes with your own dev server (each line gets its own)
+#   {port}    this worktree's own port (unique across worktrees, from 3100 up; also $PORT in its shells)
 #   {branch}  the branch under review
 # Commands start after <repo>.sh (install/setup) has finished. Lines starting with # are ignored.
 
+# PORT=… works when the app reads it (Next.js, Express). Vite and others need a flag instead:
+#   dev:{port} | pnpm exec vite dev --port {port} --strictPort
 dev:{port} | PORT={port} pnpm dev
 test       | pnpm test --watch
 
