@@ -76,7 +76,7 @@ height = "80%"
 [[keys.command]]
 key = "prefix+shift+c"
 type = "shell"
-command = "~/.config/herdr/scripts/run-in-tab.sh chat \"$(cat ~/.config/herdr/agent)\""
+command = "~/.config/herdr/scripts/run-in-tab.sh chatc \"$(cat ~/.config/herdr/agent)\""
 description = "agent in new chat tab"
 
 [[keys.command]]

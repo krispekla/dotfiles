@@ -1,5 +1,7 @@
 #!/bin/sh
 # Port registry: one dev-server port per worktree, unique across all repos, from 3100 up.
+# A repo can start higher: put the first port in ~/.config/herdr/worktree-setup/<repo>.port
+# (<repo> = the main checkout's folder name), e.g. 8005 to keep 8000-8004 for the main checkout.
 #   worktree-port.sh assign <worktree>   print its port, reserving a new one if it has none
 #   worktree-port.sh get <worktree>      print its port, if any
 #   worktree-port.sh free <worktree>     release it (cmd+/ x does this)
@@ -49,7 +51,9 @@ case "$cmd" in
     port=$(lookup)
     if [ -z "$port" ]; then
       rewrite exists
-      port=3100
+      root=$(dirname "$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo "$dir/.git")")
+      port=$(grep -Eo '^[0-9]+' "$HOME/.config/herdr/worktree-setup/$(basename "$root").port" 2>/dev/null | head -n 1 || true)
+      [ -n "$port" ] || port=3100
       while cut -f1 "$reg" | grep -qx "$port" || lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; do
         port=$((port + 1))
       done

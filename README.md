@@ -49,7 +49,7 @@ Config files are **symlinked** to this repo. A change to your live config shows 
 8. Add one line to the end of `~/.zshrc` (the rest of `.zshrc` stays per machine and out of this repo):
    `[ -f ~/.config/zsh/essentials.zsh ] && source ~/.config/zsh/essentials.zsh`
 9. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
-10. Restart herdr from a new terminal, so it picks up `HERDR_CONFIG_PATH` (worktree colours). Run `./install.sh --check` again: everything should be `ok`.
+10. Restart herdr from a new terminal, so it picks up `HERDR_CONFIG_PATH` (project colours). Run `./install.sh --check` again: everything should be `ok`.
 
 Live config points at whatever branch is checked out here. Keep this repo on `main` day to day.
 
@@ -80,12 +80,18 @@ Both run `worktree-setup/<repo>.sh` first. `<repo>.work` and `<repo>.review` add
 
 **Ports**: every worktree gets its own dev-server port when it's created (from 3100 up, unique across all repos; your main checkout keeps its usual one). It stays reserved while the worktree exists and is released by `cmd+/ x`. It's `{port}` in the tab files and `$PORT` in every shell inside the worktree (`shell/essentials.zsh`), so `pnpm exec vite dev --port $PORT` works by hand too. Registry: `~/.local/state/herdr/ports` (`herdr/scripts/worktree-port.sh`).
 
-## Worktree colours
+## Project colours
 
-Like VS Code's Peacock: each worktree has a colour, purples for review worktrees, blues/teals for work worktrees, 5 shades each (picked by port, so open worktrees differ).
-- **The worktree you're in**: the tab bar is tinted with its colour and the active tab is in full colour.
-- **Every worktree**: its name is in its colour in the Spaces and Agents lists.
-- Other workspaces keep the normal theme.
+Like VS Code's Peacock, per project: each repo gets a colour, its main checkout has it and its worktrees the two nearest hues on the colour wheel (blue project: azure and indigo worktrees), so the colour family says which project you're in and the exact hue which checkout.
+
+22 colours, all picked to look good as tints on a dark background. Pastels: blue, mauve, green, rose, aqua, indigo, pink, emerald, sapphire, violet, magenta, teal, azure, lavender, fuchsia, sky (Catppuccin Mocha plus a few from Tokyo Night, Dracula and One Dark). Deeper jewel tones: cobalt, hotpink, jade, grape, turquoise, purple (Tailwind, Solarized, Synthwave). Warm ones (peach, yellow, orange) are left out: they go brown as dark tints. The colour goes on the frame only, never on the panes or the sidebar background.
+- **The space you're in**: tinted tab bar, active tab and focused pane border in full colour, its Spaces row tinted, Ghostty window title `🔵 <name>`. Worktrees get a stronger tint, `work · <name> · :<port>` (or `review · …`) at the right of the tab bar, and the port in the title.
+- **Every coloured space**: its name in its colour in the Spaces and Agents lists.
+- **Anything that isn't a git repo**: grey.
+
+A repo gets its colour the first time it's seen (least used first: blue, mauve and green before the rest) and keeps it in `~/.local/state/herdr/project-colours`. Don't like it? **`cmd+/ p`** moves the project you're in to the next colour no other project has; the menu stays open, so keep pressing `p` (`P` goes back) until you like it, then esc.
+
+Use one Ghostty window for herdr. With a second one attached, each window can show a different space, but the colours are one config for all of them and follow whichever window switched last, and herdr only updates the title of the window used most recently.
 
 herdr has no per-workspace colours, so `herdr/scripts/worktree-theme.py` writes `~/.config/herdr/config.generated.toml` (your `config.toml` plus the colours) on every workspace switch, worktree create/remove and herdr start, and reloads herdr. herdr reads that file through `HERDR_CONFIG_PATH` (set in `shell/.zshenv` once the file exists, which needs **one herdr restart** to take effect).
 
