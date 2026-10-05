@@ -17,6 +17,7 @@ items=(
   "a|agents    jump to the one waiting on you"
   "w|worktree  new worktree → chat | git | code | terminal"
   "x|cleanup   remove this worktree (asks first)"
+  "R|review    review worktree for a remote branch (pick from list)"
   "f|lf        file browser"
   "e|setup     edit this repo's worktree setup"
   "?|keys      full cheatsheet"
@@ -48,6 +49,24 @@ new_worktree() {
 }
 
 not_repo() { printf '\n  Not a git repo: %s\n  Press any key.' "$cwd"; read -rsn1; }
+
+review_worktree() {
+  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
+  printf '\n  Fetching branches…'
+  git -C "$cwd" fetch -q --prune origin 2>/dev/null
+  # Newest first: branch, age, last author. Type to filter; a name not in the list is used as typed.
+  picked=$(git -C "$cwd" for-each-ref --sort=-committerdate \
+      --format='%(refname:lstrip=3)%09%(committerdate:relative)%09%(authorname)' refs/remotes/origin |
+    grep -v '^HEAD	' |
+    fzf --prompt 'review branch> ' --delimiter '\t' --nth 1 --print-query --reverse --height 100% \
+      --header 'Enter: create review worktree · esc: cancel')
+  rc=$?  # 0 picked, 1 no match (use what was typed), 130 esc
+  [ "$rc" -le 1 ] && [ -n "$picked" ] || return 0
+  branch=$(printf '%s\n' "$picked" | tail -n 1 | cut -f1)
+  [ -n "$branch" ] || return 0
+  printf '\033[2J\033[H\n  Setting up review worktree for %s…' "$branch"
+  "$S/review-worktree.sh" "$cwd" "$branch"
+}
 
 remove_worktree() {
   git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
@@ -84,6 +103,7 @@ run() {
     a) "$S/next-waiting-agent.sh" ;;
     w) new_worktree ;;
     x) remove_worktree ;;
+    R) review_worktree ;;
     f) exec lf ;;
     e) exec "$S/edit-worktree-setup.sh" ;;
     "?") exec less -R "$HOME/.config/herdr/cheatsheet.txt" ;;

@@ -25,7 +25,8 @@ The user may already have their own settings on that machine. Compare before lin
 - Keep the repo machine-independent: no absolute `/Users/<name>` paths, no repo names, no secrets. Use `$HOME`/`~`.
 - `.githooks/pre-commit` (gitleaks + home-path check) must stay on. Never bypass it with `--no-verify`, never disable it.
 - If it blocks a commit, stop and tell the user what it found. For a secret: move it out to a local file (`~/.zshenv.local` for shell), and never commit it. For a path: ask whether it's shared (switch to `~`/`$HOME`) or machine-specific (move it to a local file). Don't guess.
-- herdr worktree setup scripts (`~/.config/herdr/worktree-setup/<repo>.sh`) are per machine. Don't add them here.
+- herdr worktree setup scripts (`~/.config/herdr/worktree-setup/<repo>.sh`) and review tabs (`<repo>.review`) are per machine. Don't add them here.
+- Asked to set up review for a repo: read its package.json / Makefile / README for the install, dev-server (with port flag) and test commands and its git host (GitHub, GitLab, Azure). Then propose `<repo>.sh` and `<repo>.review` based on `herdr/examples/`, and write them only after the user agrees.
 - Before every commit, scan for tokens, keys, passwords, emails, hostnames and user paths. Ask if unsure.
 - New config file: add it to the repo, to the table in README.md and to `entries()` in `install.sh`.
 

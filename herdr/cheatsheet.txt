@@ -20,6 +20,7 @@
    ctrl+k/ctrl+j  previous / next agent (all workspaces)
    ^b shift+w     rename workspace
    cmd+shift+e    edit this repo's worktree setup commands
+   cmd+/ R        review worktree for a remote branch → review | git | code | dev…
    cmd+/ x        remove this worktree + close workspace (asks first)
 
  ── TABS ───────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@
  ── FILES ──────────────────────────────────────────────────────────
    ~/.config/herdr/config.toml               herdr keys
    ~/.config/herdr/worktree-setup/<repo>.sh  per-repo setup (cmd+shift+e)
+   ~/.config/herdr/worktree-setup/<repo>.review  review tabs: dev:{port}, test, pr
    ~/.config/herdr/agent                     which agent chat tabs run
    ~/.config/herdr/cheatsheet.txt            this file
    Ghostty: ~/Library/Application Support/com.mitchellh.ghostty/config.ghostty
