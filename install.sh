@@ -35,8 +35,8 @@ claude/settings.json|.claude/settings.json|merge
 aerospace/aerospace.toml|.config/aerospace/aerospace.toml|merge
 EOF
   # Scripts are linked one by one so their logs stay out of the repo
-  for f in "$REPO"/herdr/scripts/*.sh; do
-    printf 'herdr/scripts/%s|.config/herdr/scripts/%s|link\n' "${f##*/}" "${f##*/}"
+  for f in "$REPO"/herdr/scripts/*.sh "$REPO"/herdr/scripts/*.py; do
+    [ -f "$f" ] && printf 'herdr/scripts/%s|.config/herdr/scripts/%s|link\n' "${f##*/}" "${f##*/}"
   done
 }
 
@@ -97,6 +97,8 @@ if [ "$check" = 0 ]; then
   mkdir -p "$HOME/.config/herdr/worktree-setup"
   # Secret and home-path check before every commit in this repo
   git -C "$REPO" config core.hooksPath .githooks
+  # Generated herdr config with worktree colours; .zshenv points herdr at it once it exists
+  "$HOME/.config/herdr/scripts/worktree-theme.py" || echo "worktree-theme.py failed: herdr keeps using config.toml"
   [ -d "$BACKUP" ] && echo "Backups: $BACKUP"
 fi
 if [ "$check" = 1 ]; then

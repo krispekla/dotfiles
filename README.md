@@ -49,7 +49,7 @@ Config files are **symlinked** to this repo. A change to your live config shows 
 8. Add one line to the end of `~/.zshrc` (the rest of `.zshrc` stays per machine and out of this repo):
    `[ -f ~/.config/zsh/essentials.zsh ] && source ~/.config/zsh/essentials.zsh`
 9. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
-10. `herdr server reload-config` (or restart herdr). Run `./install.sh --check` again: everything should be `ok`.
+10. Restart herdr from a new terminal, so it picks up `HERDR_CONFIG_PATH` (worktree colours). Run `./install.sh --check` again: everything should be `ok`.
 
 Live config points at whatever branch is checked out here. Keep this repo on `main` day to day.
 
@@ -79,6 +79,19 @@ Where secrets and machine-specific values go instead (never in the repo):
 Both run `worktree-setup/<repo>.sh` first. `<repo>.work` and `<repo>.review` add tabs per repo (one `name | command` per line): e.g. a dev server (`dev:{port}`), tests, or for review the PR page for that repo's host (GitHub, GitLab, Azure DevOps). See `herdr/examples/`.
 
 **Ports**: every worktree gets its own dev-server port when it's created (from 3100 up, unique across all repos; your main checkout keeps its usual one). It stays reserved while the worktree exists and is released by `cmd+/ x`. It's `{port}` in the tab files and `$PORT` in every shell inside the worktree (`shell/essentials.zsh`), so `pnpm exec vite dev --port $PORT` works by hand too. Registry: `~/.local/state/herdr/ports` (`herdr/scripts/worktree-port.sh`).
+
+## Worktree colours
+
+Like VS Code's Peacock: each worktree has a colour, purples for review worktrees, blues/teals for work worktrees, 5 shades each (picked by port, so open worktrees differ).
+- **The worktree you're in**: the tab bar is tinted with its colour and the active tab is in full colour.
+- **Every worktree**: its name is in its colour in the Spaces and Agents lists.
+- Other workspaces keep the normal theme.
+
+herdr has no per-workspace colours, so `herdr/scripts/worktree-theme.py` writes `~/.config/herdr/config.generated.toml` (your `config.toml` plus the colours) on every workspace switch, worktree create/remove and herdr start, and reloads herdr. herdr reads that file through `HERDR_CONFIG_PATH` (set in `shell/.zshenv` once the file exists, which needs **one herdr restart** to take effect).
+
+- Edit `~/.config/herdr/config.toml` as usual, then run **`herdr-reload`** (plain `herdr server reload-config` reloads the old generated copy).
+- To validate your edits: `env -u HERDR_CONFIG_PATH herdr config check`.
+- Name colours go onto `config.toml` rows marked `# worktree-colors`.
 
 ## Per-machine things (not in the repo)
 

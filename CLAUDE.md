@@ -31,6 +31,10 @@ The user may already have their own settings on that machine. Compare before lin
 - Before every commit, scan for tokens, keys, passwords, emails, hostnames and user paths. Ask if unsure.
 - New config file: add it to the repo, to the table in README.md and to `entries()` in `install.sh`.
 
+## herdr config
+
+herdr reads `~/.config/herdr/config.generated.toml` (`HERDR_CONFIG_PATH`), generated from `config.toml` with the worktree colours by `herdr/scripts/worktree-theme.py`. After editing `config.toml`, validate it with `env -u HERDR_CONFIG_PATH herdr config check` and apply it with `~/.config/herdr/scripts/worktree-theme.py --reload` (the `herdr-reload` alias), not `herdr server reload-config`. Never edit the generated file.
+
 ## Git
 
 Branch + Conventional Commits + PR via `gh`. Merge or push to `main` only when the user explicitly says so for that change.

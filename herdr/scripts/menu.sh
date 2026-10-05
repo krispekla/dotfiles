@@ -90,6 +90,7 @@ remove_worktree() {
   nohup sh -c '
     "$1" worktree remove --workspace "$2" $3 >/dev/null || exit
     "$6/worktree-port.sh" free "$7"
+    "$6/worktree-theme.py"
     [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
   ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" "$S" "$top" >/dev/null 2>&1 &
   sleep 1

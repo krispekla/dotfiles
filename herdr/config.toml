@@ -104,8 +104,16 @@ height = "90%"
 # Agent rows: second line shows what the session is about (Claude's terminal title) instead of "claude"
 [ui.sidebar.agents]
 rows = [
-  ["state_icon", "workspace", "tab"],
+  ["state_icon", "workspace", "tab"],  # worktree-colors
   ["terminal_title_stripped"],
+]
+
+# Spaces rows as herdr's default. Lines marked "worktree-colors" get each worktree's name
+# coloured by scripts/worktree-theme.py (in the generated config herdr actually reads).
+[ui.sidebar.spaces]
+rows = [
+  ["state_icon", "workspace"],  # worktree-colors
+  ["branch", "git_status"],
 ]
 
 [ui]
