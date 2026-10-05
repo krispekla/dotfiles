@@ -52,7 +52,8 @@
  ── HUNK (review diffs) ─────────────────────────────────────────────
    cmd+shift+r       side pane: live diff while Claude edits (again or q = close)
    hunk diff --watch same thing, run by hand in any pane
-   cmd+/ b           new tab: everything this branch changed vs main
+   cmd+/ b           right pane: everything this branch changed vs main
+                     (r and b share one pane: same key closes, other swaps)
    { / }             previous / next note
    then ask Claude:  "walk me through this change in hunk"
 

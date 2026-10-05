@@ -12,8 +12,8 @@ items=(
   "c|Claude    new chat tab"
   "v|nvim      new code tab"
   "g|lazygit   git tab"
-  "r|hunk      live diff pane on the right (again = close)"
-  "b|branch    review everything this branch changed (new tab)"
+  "r|hunk      right pane: uncommitted changes, live (again = close)"
+  "b|branch    right pane: everything this branch changed (again = close)"
   "a|agents    jump to the one waiting on you"
   "w|worktree  new worktree → chat | git | code | terminal"
   "x|cleanup   remove this worktree (asks first)"
@@ -49,17 +49,6 @@ new_worktree() {
 
 not_repo() { printf '\n  Not a git repo: %s\n  Press any key.' "$cwd"; read -rsn1; }
 
-review_branch() {
-  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
-  # Base: the remote's default branch (origin/HEAD), else main, else master
-  default=$(git -C "$cwd" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null) ||
-    default=$(git -C "$cwd" rev-parse -q --verify main >/dev/null && echo main || echo master)
-  base=$(git -C "$cwd" merge-base HEAD "$default" 2>/dev/null) || {
-    printf '\n  No common base with %s.\n  Press any key.' "$default"; read -rsn1; return; }
-  # Committed + uncommitted changes since the branch left $default
-  "$S/run-in-tab.sh" review "exec hunk diff --watch $base"
-}
-
 remove_worktree() {
   git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
   gitdir=$(git -C "$cwd" rev-parse --path-format=absolute --git-dir)
@@ -91,7 +80,7 @@ run() {
     v) "$S/run-in-tab.sh" code "nvim ." ;;
     g) "$S/lazygit-tab.sh" ;;
     r) "$S/hunk-pane.sh" ;;
-    b) review_branch ;;
+    b) "$S/hunk-pane.sh" branch ;;
     a) "$S/next-waiting-agent.sh" ;;
     w) new_worktree ;;
     x) remove_worktree ;;

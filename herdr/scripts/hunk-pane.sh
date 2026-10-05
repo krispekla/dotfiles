@@ -1,12 +1,17 @@
 #!/bin/sh
-# Toggle a side pane with hunk's live diff of the focused pane's repo. Ghostty maps cmd+shift+r to this.
-# Opens a split on the right running `hunk diff --watch` (reloads as files change); focus stays put.
-# Pressed again in the same tab it closes that pane. q inside hunk closes it too.
+# hunk diff in a pane on the right of the focused pane's repo; focus stays put. Reloads as files change.
+#   hunk-pane.sh          live: uncommitted changes (cmd+shift+r, menu r)
+#   hunk-pane.sh branch   whole branch: everything since it left the default branch (menu b)
+# One hunk pane per tab: same mode again closes it, the other mode swaps it in place.
+# q inside hunk closes it too.
 set -eu
 exec >>"$HOME/.config/herdr/scripts/hunk-pane.log" 2>&1
 
 PATH="/opt/homebrew/bin:$HOME/.local/bin:$HOME/.hunk/bin:$PATH"
 herdr="${HERDR_BIN_PATH:-herdr}"
+mode="${1:-live}"
+
+notify() { "$herdr" notification show "hunk: $1" --body "${2:-}" --sound none >/dev/null; }
 
 # Pane the user was looking at: provided by herdr when available, else the focused pane
 # in the focused workspace's active tab.
@@ -20,26 +25,41 @@ info=$("$herdr" pane get "$pane")
 tab=$(echo "$info" | jq -r '.result.pane.tab_id')
 cwd=$(echo "$info" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd')
 
-# The pane this script opened in this tab is remembered, so a second press closes it
-# even while hunk is still starting
+# The pane this script opened in this tab is remembered (terminal id + mode), so a second
+# press finds it even while hunk is still starting. Terminal ids stay unique across herdr
+# restarts, unlike pane ids.
 state="${TMPDIR:-/tmp}/herdr-hunk-pane-$(echo "$tab" | tr -c 'A-Za-z0-9\n' '_')"
 if [ -f "$state" ]; then
-  # Stored as terminal id, unique even if pane ids get reused after a herdr restart
-  term=$(cat "$state"); rm -f "$state"
+  { read -r term; read -r open_mode; } < "$state" || true
+  rm -f "$state"
   open=$("$herdr" pane list | jq -r --arg t "$term" '.result.panes[] | select(.terminal_id == $t) | .pane_id' | head -n 1)
   if [ -n "$open" ]; then
     "$herdr" pane close "$open" >/dev/null
-    exit 0
+    # Same mode: that was the toggle. Other mode: fall through and reopen in this one.
+    [ "${open_mode:-live}" = "$mode" ] && exit 0
+    # If the focused pane was the hunk pane, split its neighbour instead
+    [ "$open" = "$pane" ] && pane=$("$herdr" pane list | jq -r --arg t "$tab" '[.result.panes[] | select(.tab_id == $t)][0].pane_id')
   fi
 fi
 
 if ! git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
-  "$herdr" notification show "hunk: not a git repo" --body "$cwd" --sound none >/dev/null
+  notify "not a git repo" "$cwd"
   exit 0
 fi
 
+case "$mode" in
+  live) target="" ;;
+  branch)
+    # Base: the remote's default branch (origin/HEAD), else main, else master
+    default=$(git -C "$cwd" symbolic-ref -q --short refs/remotes/origin/HEAD) ||
+      default=$(git -C "$cwd" rev-parse -q --verify main >/dev/null && echo main || echo master)
+    target=$(git -C "$cwd" merge-base HEAD "$default") || { notify "no common base with $default" "$cwd"; exit 0; }
+    ;;
+  *) echo "unknown mode: $mode"; exit 1 ;;
+esac
+
 split=$("$herdr" pane split "$pane" --direction right --cwd "$cwd" --no-focus)
 new=$(echo "$split" | jq -r '.result.pane.pane_id')
+printf '%s\n%s\n' "$(echo "$split" | jq -r '.result.pane.terminal_id')" "$mode" > "$state"
 # exec: quitting hunk ends the shell, so the pane closes
-echo "$split" | jq -r '.result.pane.terminal_id' > "$state"
-"$herdr" pane run "$new" "exec hunk diff --watch" >/dev/null
+"$herdr" pane run "$new" "exec hunk diff --watch $target" >/dev/null
