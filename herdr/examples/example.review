@@ -1,0 +1,13 @@
+# Copy to ~/.config/herdr/worktree-setup/<repo>.review (<repo> = the main checkout's folder name).
+# Extra tabs for review worktrees (cmd+/ R). One tab per line:  name | command
+#   {port}    a free port from 3100 up, so it never clashes with your own dev server (each line gets its own)
+#   {branch}  the branch under review
+# Commands start after <repo>.sh (install/setup) has finished. Lines starting with # are ignored.
+
+dev:{port} | PORT={port} pnpm dev
+test       | pnpm test --watch
+
+# PR / MR page. Keep the line for this repo's host, or drop it for no PR tab.
+pr | gh pr view {branch} --comments
+# pr | glab mr view {branch} --comments
+# pr | az repos pr list --source-branch {branch} --status active -o table
