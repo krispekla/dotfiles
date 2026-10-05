@@ -2,7 +2,7 @@ id = "kris.tools"
 name = "Kris tools"
 version = "0.1.0"
 min_herdr_version = "0.9.0"
-description = "Personal panes: lazygit in a tab, worktree setup hook, worktree colours"
+description = "Personal panes: lazygit in a tab, worktree setup hook, project colours"
 platforms = ["macos"]
 
 [[panes]]
@@ -17,7 +17,7 @@ command = ["/bin/zsh", "-c", "/opt/homebrew/bin/lazygit || { echo; echo 'lazygit
 on = "worktree.created"
 command = ["/bin/sh", "-c", "exec /bin/sh \"$HOME/.config/herdr/scripts/worktree-created.sh\""]
 
-# Worktree colours (scripts/worktree-theme.py): regenerate herdr's config for the focused workspace
+# Project colours (scripts/worktree-theme.py): regenerate herdr's config for the focused workspace
 [[events]]
 on = "workspace.focused"
 command = ["/bin/sh", "-c", "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:$PATH\" exec \"$HOME/.config/herdr/scripts/worktree-theme.py\""]

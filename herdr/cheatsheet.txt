@@ -2,13 +2,14 @@
  ═══════════════════════════════════════════════════════════════════
 
  ★ DAILY
-   cmd+/          menu: Claude, nvim, lazygit, hunk, … (one letter runs)
+   cmd+/          menu: chat, nvim, lazygit, hunk, … (one letter runs)
+   cmd+/ c        new chat tab → pick agent: enter/c Claude (chatc) · o Copilot (chatg)
    cmd+shift+g    new worktree  (type branch: feat/xyz) → chat|git|code|terminal
    cmd+i          jump to agent waiting on you
    cmd+r          workspace picker (j/k, Enter)
    cmd+k / cmd+j  previous / next workspace
    cmd+1..9       go to tab N
-   cmd+shift+c    new chat tab (Claude)
+   cmd+shift+c    new chatc tab (Claude)
    cmd+shift+v    new code tab (nvim .)
    cmd+g          git tab (lazygit)
    cmd+shift+r    hunk live diff on the right (again = close)
@@ -20,8 +21,10 @@
    ctrl+k/ctrl+j  previous / next agent (all workspaces)
    ^b shift+w     rename workspace
    cmd+shift+e    edit this repo's worktree setup commands
+   cmd+/ s        restart Storybook in its tab, same port (no install/build)
    cmd+/ R        review worktree for a remote branch → review | git | code | dev…
    cmd+/ x        remove this worktree + close workspace (asks first)
+   cmd+/ p        next colour for this project (again = next one, P = back, esc when happy)
 
  ── TABS ───────────────────────────────────────────────────────────
    cmd+shift+[ ]  previous / next tab       (also ctrl+h / ctrl+l)

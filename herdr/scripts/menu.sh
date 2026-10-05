@@ -9,17 +9,19 @@ herdr="${HERDR_BIN_PATH:-herdr}"
 S="$HOME/.config/herdr/scripts"
 
 items=(
-  "c|Claude    new chat tab"
+  "c|chat      new chat tab → Claude | Copilot"
   "v|nvim      new code tab"
   "g|lazygit   git tab"
   "r|hunk      right pane: uncommitted changes, live (again = close)"
   "b|branch    right pane: everything this branch changed (again = close)"
   "a|agents    jump to the one waiting on you"
+  "s|storybook restart in its tab, same port (no install/build)"
   "w|worktree  new worktree → chat | git | code | terminal"
   "x|cleanup   remove this worktree (asks first)"
   "R|review    review worktree for a remote branch (pick from list)"
   "f|lf        file browser"
   "e|setup     edit this repo's worktree setup"
+  "p|colour    next colour for this project (again = next one, P = back)"
   "?|keys      full cheatsheet"
 )
 
@@ -46,6 +48,51 @@ new_worktree() {
   if [ -n "$branch" ]; then
     "$herdr" worktree create --cwd "$cwd" --branch "$branch" --focus >/dev/null
   fi
+}
+
+# Agent picker for the chat tab: first row is preselected, so enter = Claude.
+# Letter runs one directly; j/k or arrows move; esc or q goes back to the menu.
+# Row: letter|name shown|tab label|command
+chat_agents=(
+  "c|Claude|chatc|$(cat "$HOME/.config/herdr/agent" 2>/dev/null || echo claude)"
+  "o|Copilot|chatg|copilot"
+)
+
+pick_chat() {
+  local sel=0 n=${#chat_agents[@]} k rest i row letter label tab cmd
+  while :; do
+    printf '\033[2J\033[H\n  %snew chat tab%s\n\n' "$bold" "$reset"
+    for i in "${!chat_agents[@]}"; do
+      IFS='|' read -r letter label _ <<<"${chat_agents[$i]}"
+      if [ "$i" -eq "$sel" ]; then row="${bold}▸ ${key}${letter}${reset}${bold}   ${label}${reset}"
+      else row="  ${key}${letter}${reset}   ${label}"; fi
+      printf '   %s\n' "$row"
+    done
+    printf '\n  %senter  open · j/k  move · esc / q  back%s\n' "$dim" "$reset"
+    IFS= read -rsn1 k || return 1
+    case "$k" in
+      $'\e')
+        # Arrow keys arrive as esc [ A/B; bash 3.2 (macOS /bin/bash) only takes whole-second timeouts
+        read -rsn2 -t "$( [ "${BASH_VERSINFO[0]}" -ge 4 ] && echo 0.05 || echo 1)" rest || rest=""
+        case "$rest" in
+          "[A") k=k ;;
+          "[B") k=j ;;
+          *) return 1 ;;
+        esac ;;
+    esac
+    case "$k" in
+      q) return 1 ;;
+      "") break ;;
+      j) sel=$(( (sel + 1) % n )) ;;
+      k) sel=$(( (sel + n - 1) % n )) ;;
+      *)
+        for i in "${!chat_agents[@]}"; do
+          [ "${chat_agents[$i]%%|*}" = "$k" ] && { sel=$i; break 2; }
+        done ;;
+    esac
+  done
+  IFS='|' read -r _ _ tab cmd <<<"${chat_agents[$sel]}"
+  "$S/run-in-tab.sh" "$tab" "$cmd"
 }
 
 not_repo() { printf '\n  Not a git repo: %s\n  Press any key.' "$cwd"; read -rsn1; }
@@ -96,31 +143,45 @@ remove_worktree() {
   sleep 1
 }
 
+# Stays open: herdr repaints behind the popup, so keep pressing p (P = back) until you like it
+next_colour() {
+  local name
+  name=$("$S/worktree-theme.py" "--$1-colour" "$HERDR_ACTIVE_WORKSPACE_ID")
+  draw_menu
+  printf '\n  colour: %s%s%s\n' "$bold" "$name" "$reset"
+}
+
 run() {
   case "$1" in
-    c) "$S/run-in-tab.sh" chat "$(cat "$HOME/.config/herdr/agent" 2>/dev/null || echo claude)" ;;
+    c) pick_chat || { draw_menu; return 1; } ;;
     v) "$S/run-in-tab.sh" code "nvim ." ;;
     g) "$S/lazygit-tab.sh" ;;
     r) "$S/hunk-pane.sh" ;;
     b) "$S/hunk-pane.sh" branch ;;
     a) "$S/next-waiting-agent.sh" ;;
+    s) "$S/storybook-restart.sh" ;;
     w) new_worktree ;;
     x) remove_worktree ;;
     R) review_worktree ;;
     f) exec lf ;;
     e) exec "$S/edit-worktree-setup.sh" ;;
+    p) next_colour next; return 1 ;;
+    P) next_colour prev; return 1 ;;
     "?") exec less -R "$HOME/.config/herdr/cheatsheet.txt" ;;
     *) return 1 ;;
   esac
 }
 
-bold=$'\033[1m' dim=$'\033[2m' key=$'\033[38;5;216m' reset=$'\033[0m'
-printf '\033[2J\033[H\n  %sherdr menu%s  %s%s%s\n\n' "$bold" "$reset" "$dim" "${cwd/#$HOME/$tilde}" "$reset"
-for i in "${items[@]}"; do
-  printf '   %s%s%s   %s\n' "$key$bold" "${i%%|*}" "$reset" "${i#*|}"
-done
-printf '\n  %sesc / q  close%s\n' "$dim" "$reset"
+draw_menu() {
+  printf '\033[2J\033[H\n  %sherdr menu%s  %s%s%s\n\n' "$bold" "$reset" "$dim" "${cwd/#$HOME/$tilde}" "$reset"
+  for i in "${items[@]}"; do
+    printf '   %s%s%s   %s\n' "$key$bold" "${i%%|*}" "$reset" "${i#*|}"
+  done
+  printf '\n  %sesc / q  close%s\n' "$dim" "$reset"
+}
 
+bold=$'\033[1m' dim=$'\033[2m' key=$'\033[38;5;216m' reset=$'\033[0m'
+draw_menu
 while IFS= read -rsn1 k; do
   case "$k" in
     $'\e'|q|"") exit 0 ;;
