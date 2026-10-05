@@ -20,7 +20,7 @@ The repo holds the *workflow*, not machine state. It has no repo names, no absol
 | `hunk/config.toml` | `~/.config/hunk/config.toml` | hunk diff viewer display settings |
 | `claude/settings.json` | `~/.claude/settings.json` | Claude Code settings (status line, effort, notifications) |
 | `claude/statusline.sh` | `~/.claude/statusline.sh` | Status line: project, branch, model/effort, context + usage meters |
-| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global Claude instructions: review findings and coding notes go into Hunk, and the Hunk → Azure DevOps PR review flow |
+| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global Claude instructions: review findings and coding notes go into Hunk, and the Hunk → PR review flow (GitHub, Azure DevOps or GitLab, by the repo's remote) |
 | `claude/skills/timesheet/` | `~/.claude/skills/timesheet/` | `/timesheet [date or range]`: one copy-paste line per day from git commits and Claude sessions, always ending in "code review, meetings" |
 | `shell/.zshenv` | `~/.zshenv` | `EDITOR=nvim` (+ cargo env if present) |
 | `shell/essentials.zsh` | `~/.config/zsh/essentials.zsh` | Only the shell bits this setup needs: herdr/claude/hunk on `PATH`, fzf keys, `$PORT` inside worktrees. Loaded from `~/.zshrc` |
