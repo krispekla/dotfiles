@@ -50,3 +50,4 @@ code=$("$herdr" tab create --workspace "$workspace" --cwd "$path" --label code -
 
 "$S/config-tabs.sh" "$tabs" "$workspace" "$path" "$branch" "$port" "$marker"
 "$herdr" tab create --workspace "$workspace" --cwd "$path" --label terminal --no-focus >/dev/null
+"$S/worktree-theme.py" || true  # colours for the new worktree

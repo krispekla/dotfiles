@@ -10,3 +10,7 @@ plugins.json
 
 # Per-machine, per-repo herdr worktree setup scripts
 herdr/worktree-setup/
+
+# Python bytecode
+__pycache__/
+*.pyc

@@ -64,7 +64,7 @@
    in the list:   type to filter · arrows or ctrl+n/ctrl+p move · Enter picks
 
  ── FILES ──────────────────────────────────────────────────────────
-   ~/.config/herdr/config.toml               herdr keys
+   ~/.config/herdr/config.toml               herdr keys (then run: herdr-reload)
    ~/.config/herdr/worktree-setup/<repo>.sh  per-repo setup (cmd+shift+e)
    ~/.config/herdr/worktree-setup/<repo>.work    work tabs: dev:{port}, …
    ~/.config/herdr/worktree-setup/<repo>.review  review tabs: dev:{port}, test, pr

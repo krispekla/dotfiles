@@ -34,3 +34,7 @@ _herdr_port() {
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _herdr_port
 add-zsh-hook preexec _herdr_port  # commands typed in by herdr right after the shell starts
+
+# After editing ~/.config/herdr/config.toml: regenerate herdr's coloured config and reload it
+# (plain `herdr server reload-config` would reload the old generated copy)
+alias herdr-reload='~/.config/herdr/scripts/worktree-theme.py --reload'

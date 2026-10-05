@@ -94,3 +94,4 @@ new_tab code "$wait_setup; nvim ."
 
 new_tab terminal ""
 "$herdr" tab focus "$review_tab" >/dev/null
+"$S/worktree-theme.py" || true  # colours for the new worktree
