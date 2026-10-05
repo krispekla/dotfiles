@@ -13,8 +13,10 @@ items=(
   "v|nvim      new code tab"
   "g|lazygit   git tab"
   "r|hunk      live diff pane on the right (again = close)"
+  "b|branch    review everything this branch changed (new tab)"
   "a|agents    jump to the one waiting on you"
   "w|worktree  new worktree → chat | git | code | terminal"
+  "x|cleanup   remove this worktree (asks first)"
   "f|lf        file browser"
   "e|setup     edit this repo's worktree setup"
   "?|keys      full cheatsheet"
@@ -32,6 +34,8 @@ export HERDR_ACTIVE_WORKSPACE_ID="${HERDR_ACTIVE_WORKSPACE_ID:-$(echo "$info" | 
 export HERDR_ACTIVE_PANE_CWD="${HERDR_ACTIVE_PANE_CWD:-$(echo "$info" | jq -r '.result.pane.foreground_cwd // .result.pane.cwd')}"
 cwd="$HERDR_ACTIVE_PANE_CWD"
 
+tilde='~'
+
 new_worktree() {
   if ! git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
     printf '\n  Not a git repo: %s\n  Press any key.' "$cwd"; read -rsn1; return
@@ -43,14 +47,54 @@ new_worktree() {
   fi
 }
 
+not_repo() { printf '\n  Not a git repo: %s\n  Press any key.' "$cwd"; read -rsn1; }
+
+review_branch() {
+  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
+  # Base: the remote's default branch (origin/HEAD), else main, else master
+  default=$(git -C "$cwd" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null) ||
+    default=$(git -C "$cwd" rev-parse -q --verify main >/dev/null && echo main || echo master)
+  base=$(git -C "$cwd" merge-base HEAD "$default" 2>/dev/null) || {
+    printf '\n  No common base with %s.\n  Press any key.' "$default"; read -rsn1; return; }
+  # Committed + uncommitted changes since the branch left $default
+  "$S/run-in-tab.sh" review "exec hunk diff --watch $base"
+}
+
+remove_worktree() {
+  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
+  gitdir=$(git -C "$cwd" rev-parse --path-format=absolute --git-dir)
+  common=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)
+  if [ "$gitdir" = "$common" ]; then
+    printf '\n  This is the main checkout, not a worktree. Nothing to remove.\n  Press any key.'; read -rsn1; return
+  fi
+  top=$(git -C "$cwd" rev-parse --show-toplevel)
+  branch=$(git -C "$cwd" symbolic-ref -q --short HEAD || echo "(detached)")
+  dirty=$(git -C "$cwd" status --porcelain | wc -l | tr -d ' ')
+  printf '\n  Remove worktree %s\n  branch %s' "${top/#$HOME/$tilde}" "$branch"
+  [ "$dirty" -gt 0 ] && printf '\n  \033[33m%s uncommitted change(s) will be lost\033[0m' "$dirty"
+  printf '\n\n  Remove it and close this workspace? [y/N] '
+  read -rsn1 answer; echo
+  case "$answer" in y|Y) ;; *) return ;; esac
+  root=$(dirname "$common")
+  # Detached: closing the workspace also closes this popup. The branch is deleted only if
+  # git sees it as merged (branch -d); otherwise it's kept.
+  nohup sh -c '
+    "$1" worktree remove --workspace "$2" $3 >/dev/null &&
+      [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
+  ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" >/dev/null 2>&1 &
+  sleep 1
+}
+
 run() {
   case "$1" in
     c) "$S/run-in-tab.sh" chat "$(cat "$HOME/.config/herdr/agent" 2>/dev/null || echo claude)" ;;
     v) "$S/run-in-tab.sh" code "nvim ." ;;
     g) "$S/lazygit-tab.sh" ;;
     r) "$S/hunk-pane.sh" ;;
+    b) review_branch ;;
     a) "$S/next-waiting-agent.sh" ;;
     w) new_worktree ;;
+    x) remove_worktree ;;
     f) exec lf ;;
     e) exec "$S/edit-worktree-setup.sh" ;;
     "?") exec less -R "$HOME/.config/herdr/cheatsheet.txt" ;;
@@ -58,7 +102,6 @@ run() {
   esac
 }
 
-tilde='~'
 bold=$'\033[1m' dim=$'\033[2m' key=$'\033[38;5;216m' reset=$'\033[0m'
 printf '\033[2J\033[H\n  %sherdr menu%s  %s%s%s\n\n' "$bold" "$reset" "$dim" "${cwd/#$HOME/$tilde}" "$reset"
 for i in "${items[@]}"; do
