@@ -62,6 +62,17 @@ requirements() { # fresh login + interactive zsh, like a new terminal: PATH and 
     r "herdr plugin kris.tools" "herdr plugin list | grep -q kris.tools" "herdr plugin link ~/.config/herdr/plugins/kris-tools"
     r "herdr Claude integration" "herdr integration status | grep -q \"^claude: current\"" "herdr integration install claude"
   ' </dev/null 2>/dev/null | sed -n 's/^REQ //p'
+  # herdr's server must have been started with HERDR_CONFIG_PATH (from a shell opened after
+  # .zshenv set it), or worktree colours never show
+  server=$(ps -axo pid=,command= | awk '$2 ~ /herdr$/ && $3 == "server" {print $1}' | head -n 1 || true)
+  server_env=" $( [ -n "$server" ] && ps eww -p "$server" -o command= 2>/dev/null || true) "
+  if [ -z "$server" ]; then
+    echo "missing  herdr server running  (start herdr)"
+  elif case "$server_env" in *" HERDR_CONFIG_PATH="*) true ;; *) false ;; esac; then
+    echo "ok       herdr server reads the generated config (worktree colours)"
+  else
+    echo "missing  herdr server reads the generated config  (herdr server stop, then run herdr in a NEW terminal tab)"
+  fi
   if [ "$(git -C "$REPO" config core.hooksPath)" = .githooks ]; then
     echo "ok       pre-commit check (gitleaks + home paths)"
   else
