@@ -29,6 +29,7 @@ nvim|.config/nvim|link
 lazygit/config.yml|Library/Application Support/lazygit/config.yml|link
 hunk/config.toml|.config/hunk/config.toml|link
 claude/statusline.sh|.claude/statusline.sh|link
+claude/CLAUDE.md|.claude/CLAUDE.md|link
 shell/.zshenv|.zshenv|link
 shell/essentials.zsh|.config/zsh/essentials.zsh|link
 claude/settings.json|.claude/settings.json|merge
@@ -61,6 +62,8 @@ requirements() { # fresh login + interactive zsh, like a new terminal: PATH and 
     r "AeroSpace.app" "[ -d /Applications/AeroSpace.app ]" "brew bundle"
     r "herdr plugin kris.tools" "herdr plugin list | grep -q kris.tools" "herdr plugin link ~/.config/herdr/plugins/kris-tools"
     r "herdr Claude integration" "herdr integration status | grep -q \"^claude: current\"" "herdr integration install claude"
+    r "herdr Copilot integration (if copilot is installed)" "! command -v copilot || herdr integration status | grep -q \"^copilot: current\"" "herdr integration install copilot"
+    r "Claude hunk-review skill" "[ -e ~/.claude/skills/hunk-review/SKILL.md ]" "mkdir -p ~/.claude/skills && ln -sfn \"\$(dirname \"\$(hunk skill path hunk-review)\")\" ~/.claude/skills/hunk-review"
   ' </dev/null 2>/dev/null | sed -n 's/^REQ //p'
   # herdr's server must have been started with HERDR_CONFIG_PATH (from a shell opened after
   # .zshenv set it), or worktree colours never show

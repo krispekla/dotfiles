@@ -4,7 +4,7 @@
     "command": "~/.claude/statusline.sh"
   },
   "enabledPlugins": {
-    "swift-lsp@claude-plugins-official": true
+    "code-review@claude-plugins-official": true
   },
   "effortLevel": "xhigh",
   "modelSettings": {
