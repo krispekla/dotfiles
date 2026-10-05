@@ -20,6 +20,7 @@ The repo holds the *workflow*, not machine state. It has no repo names, no absol
 | `hunk/config.toml` | `~/.config/hunk/config.toml` | hunk diff viewer display settings |
 | `claude/settings.json` | `~/.claude/settings.json` | Claude Code settings (status line, effort, notifications) |
 | `claude/statusline.sh` | `~/.claude/statusline.sh` | Status line: project, branch, model/effort, context + usage meters |
+| `claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global Claude instructions: review findings and coding notes go into Hunk, and the Hunk → Azure DevOps PR review flow |
 | `shell/.zshenv` | `~/.zshenv` | `EDITOR=nvim` (+ cargo env if present) |
 | `shell/essentials.zsh` | `~/.config/zsh/essentials.zsh` | Only the shell bits this setup needs: herdr/claude/hunk on `PATH`, fzf keys, `$PORT` inside worktrees. Loaded from `~/.zshrc` |
 | `aerospace/aerospace.toml` | `~/.config/aerospace/aerospace.toml` | Tiling window manager, `alt` layer |
@@ -37,15 +38,17 @@ Config files are **symlinked** to this repo. A change to your live config shows 
    - **herdr**: `curl -fsSL https://herdr.dev/install.sh | sh`. It installs to `~/.local/bin`, so that needs to be on your `PATH`. Update later with `herdr update`.
    - **hunk**: `curl -fsSL https://hunk.dev/install.sh | sh`. It installs to `~/.hunk/bin` and adds that to `PATH` in `~/.zshrc`. Update later with `hunk update`.
    - **Claude Code**
+   - **GitHub Copilot CLI** (optional, the second agent in `cmd+/ c`): `npm install -g @github/copilot`
 3. `./install.sh --check`: shows every file as `linked` / `same` / `missing` / `differs`, with diffs, then a **Requirements** list:
-   tools on `PATH`, fzf keys, `EDITOR`, apps, herdr plugin + Claude integration, and the commit check. Each one is `ok` or `missing` with the fix. Changes nothing.
+   tools on `PATH`, fzf keys, `EDITOR`, apps, herdr plugin + agent integrations, the hunk-review skill, and the commit check. Each one is `ok` or `missing` with the fix. Changes nothing.
 4. If anything differs, merge it first. The easiest way is to open Claude in this repo; `CLAUDE.md` tells it how.
 5. `./install.sh`: links what's safe, skips what still differs, backs up anything it replaces to `~/.dotfiles-backup/<timestamp>/`. Safe to run again.
    It also turns on the repo's pre-commit check (see Safeguards).
 6. Register the herdr plugin (herdr keeps its own copy, `plugins.json`; re-run after editing the manifest):
    `herdr plugin link ~/.config/herdr/plugins/kris-tools`
-7. Hook Claude into herdr (this adds a `SessionStart` hook to `~/.claude/settings.json`):
-   `herdr integration install claude`
+7. Hook the agents into herdr (Claude's adds a `SessionStart` hook to `~/.claude/settings.json`), and give Claude Hunk's review skill:
+   `herdr integration install claude` (and `herdr integration install copilot` if you use Copilot)
+   `mkdir -p ~/.claude/skills && ln -sfn "$(dirname "$(hunk skill path hunk-review)")" ~/.claude/skills/hunk-review`
 8. Add one line to the end of `~/.zshrc` (the rest of `.zshrc` stays per machine and out of this repo):
    `[ -f ~/.config/zsh/essentials.zsh ] && source ~/.config/zsh/essentials.zsh`
 9. Open nvim once so lazy.nvim installs the plugins pinned in `lazy-lock.json`.
