@@ -11,7 +11,7 @@ into Hunk as inline notes, not only as a chat table.
   If no session matches, tell the user and suggest they open one.
 - herdr review worktrees open a Hunk pane automatically on the whole branch diff
   (`hunk diff --watch <merge-base with main>`), so a session usually already exists there.
-- Hunk notes are local to the session. Posting to the Azure PR stays a separate, explicit request.
+- Hunk notes are local to the session. Posting them to the PR stays a separate, explicit request.
 
 # Coding workflow: Hunk
 
@@ -27,10 +27,15 @@ when it is open; never open it yourself.
 - The pane runs with `--watch`, so notes on a file can drop when that file changes; re-add them
   if asked.
 
-# Reviewing someone else's PR: Hunk to Azure DevOps
+# Reviewing someone else's PR: Hunk to the PR
 
-Hunk notes are the draft; Azure is where approved comments get published, under the user's name,
+Hunk notes are the draft; the PR is where approved comments get published, under the user's name,
 only when they say "push". What the user approves in Hunk is what gets posted.
+
+The PR lives on whatever host the repo uses. Detect it from `git remote get-url origin` and use
+that host's CLI (see "Per host" below): `github.com` → `gh`, `dev.azure.com` / `*.visualstudio.com`
+→ `az repos`, `gitlab.*` → `glab`. If the CLI is missing or not logged in, say so and stop; don't
+fall back to another host or to the browser.
 
 1. Write each review finding into Hunk already in its final, postable form (see "Code review
    output: Hunk"), so the user reviews the exact wording:
@@ -49,14 +54,25 @@ only when they say "push". What the user approves in Hunk is what gets posted.
    is never posted.
 3. On "push", read the notes and replies (`hunk session review --repo <path> --include-notes --json`)
    and post only approved findings. The user picks the mode:
-   - separate threads: one Azure thread per finding, anchored to its file and line, each starting
-     with the owner tag: `@<PR owner> <label>: <Observation>`;
-   - one thread: one PR-level thread, tagging the owner once, with each finding as a list item
+   - separate threads: one comment per finding, anchored to its file and line, each starting with
+     the owner mention: `@<PR owner> <label>: <Observation>`;
+   - one thread: one PR-level comment, mentioning the owner once, with each finding as a list item
      naming `file:line`.
-   Mention the owner for real with `@<{identity-id}>`, the id from the PR's `createdBy.id`
-   (`az repos pr show --id <id>`).
-4. Before posting: check local HEAD equals the PR's `lastMergeSourceCommit` (otherwise line anchors
-   drift) and skip findings an existing thread already covers. Show only the findings whose text
-   changed because of a correction reply; approved `ok` notes post exactly as written. Then post
-   with `az rest` against the PR threads API.
-5. After posting, report the PR URL and thread count; clear the Hunk notes only if the user asks.
+4. Before posting: check local HEAD equals the PR's head commit (otherwise line anchors drift) and
+   skip findings an existing comment already covers. Show only the findings whose text changed
+   because of a correction reply; approved `ok` notes post exactly as written. Then post.
+5. After posting, report the PR URL and comment count; clear the Hunk notes only if the user asks.
+
+## Per host
+
+| | GitHub (`gh`) | Azure DevOps (`az repos`) | GitLab (`glab`) |
+|---|---|---|---|
+| Find the PR | `gh pr view <branch> --json number,url,author,headRefOid` | `az repos pr list --source-branch <branch> --status active` | `glab mr view <branch> -F json` |
+| Owner mention | `@<author.login>` | `@<{identity-id}>`, id from `createdBy.id` | `@<author.username>` |
+| PR head commit | `headRefOid` | `lastMergeSourceCommit.commitId` | `sha` |
+| Existing comments | `gh api repos/{owner}/{repo}/pulls/<n>/comments` and `gh pr view <n> --comments` | `az rest` GET on the PR's `threads` | `glab api projects/:id/merge_requests/<iid>/discussions` |
+| Line comments | one review with all comments: `gh api repos/{owner}/{repo}/pulls/<n>/reviews` with `event=COMMENT`, `commit_id`, `comments[]` (`path`, `line`, `side=RIGHT`, `body`) | `az rest` POST to the PR's `threads`, one thread per finding with `threadContext` (`filePath`, `rightFileStart`/`rightFileEnd`) | `glab api` POST to `.../discussions` per finding with `position` (`position_type=text`, `base_sha`, `start_sha`, `head_sha`, `new_path`, `new_line`) |
+| One PR-level comment | `gh pr comment <n> --body-file -` | `az rest` POST to `threads` without `threadContext` | `glab mr note <iid> -m` |
+
+Another host (Bitbucket, Gitea, …): find its CLI or API the same way, show the user the exact
+calls, and post only after they agree.
