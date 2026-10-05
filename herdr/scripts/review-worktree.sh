@@ -6,8 +6,9 @@
 #   - tabs: review (agent + whole-branch hunk pane) | git | code | tabs from <repo>.review | terminal
 # Per repo, per machine (not in the dotfiles repo), in ~/.config/herdr/worktree-setup/:
 #   <repo>.sh      install/setup, shared with work worktrees; runs first in the review tab
-#   <repo>.review  extra tabs, one per line: `name | command`. {port} = a free port from 3100 up,
-#                  {branch} = the branch. See herdr/examples/example.review in the dotfiles repo.
+#   <repo>.review  extra tabs, one per line: `name | command`. {port} = this worktree's own port
+#                  (worktree-port.sh, also $PORT in its shells), {branch} = the branch.
+#                  See herdr/examples/example.review in the dotfiles repo.
 set -eu
 exec >>"$HOME/.config/herdr/scripts/review-worktree.log" 2>&1
 echo "--- $(date) $*"
@@ -55,6 +56,7 @@ path="$HOME/.herdr/worktrees/$repo/review-$slug"
 n=2; while [ -e "$path" ]; do path="$HOME/.herdr/worktrees/$repo/review-$slug-$n"; n=$((n + 1)); done
 mkdir -p "$(dirname "$path")"
 git -C "$root" worktree add -q "$path" "$branch"
+port=$("$S/worktree-port.sh" assign "$path")
 
 opened=$("$herdr" worktree open --cwd "$root" --path "$path" --label "review $branch" --focus)
 workspace=$(echo "$opened" | jq -r '[.. | objects | .workspace_id? // empty] | first')
@@ -88,27 +90,7 @@ opened=$("$herdr" plugin pane open --plugin kris.tools --entrypoint lazygit --pl
 
 new_tab code "$wait_setup; nvim ."
 
-# Per-repo tabs. Each {port} line gets its own free port; ports handed out in this run are skipped too.
-used=""
-free_port() { # sets $port; no $(...) so $used survives between calls
-  port=3100
-  while lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1 || case " $used " in *" $port "*) true ;; *) false ;; esac; do
-    port=$((port + 1))
-  done
-  used="$used $port"
-}
-if [ -f "$tabs" ]; then
-  grep -vE '^[[:space:]]*(#|$)' "$tabs" | grep '|' | while IFS= read -r line; do
-    name=$(echo "${line%%|*}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-    cmd=$(echo "${line#*|}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
-    case "$line" in *"{port}"*)
-      free_port
-      name=$(echo "$name" | sed "s/{port}/$port/g"); cmd=$(echo "$cmd" | sed "s/{port}/$port/g") ;;
-    esac
-    cmd=$(echo "$cmd" | sed "s#{branch}#$branch#g")
-    new_tab "$name" "$wait_setup; $cmd"
-  done
-fi
+"$S/config-tabs.sh" "$tabs" "$workspace" "$path" "$branch" "$port" "$marker"
 
 new_tab terminal ""
 "$herdr" tab focus "$review_tab" >/dev/null

@@ -66,7 +66,9 @@
  ── FILES ──────────────────────────────────────────────────────────
    ~/.config/herdr/config.toml               herdr keys
    ~/.config/herdr/worktree-setup/<repo>.sh  per-repo setup (cmd+shift+e)
+   ~/.config/herdr/worktree-setup/<repo>.work    work tabs: dev:{port}, …
    ~/.config/herdr/worktree-setup/<repo>.review  review tabs: dev:{port}, test, pr
+   each worktree has its own port: $PORT in its shells, {port} in those files
    ~/.config/herdr/agent                     which agent chat tabs run
    ~/.config/herdr/cheatsheet.txt            this file
    Ghostty: ~/Library/Application Support/com.mitchellh.ghostty/config.ghostty
