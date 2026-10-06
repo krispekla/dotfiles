@@ -61,5 +61,6 @@ esac
 split=$("$herdr" pane split "$pane" --direction right --cwd "$cwd" --no-focus)
 new=$(echo "$split" | jq -r '.result.pane.pane_id')
 printf '%s\n%s\n' "$(echo "$split" | jq -r '.result.pane.terminal_id')" "$mode" > "$state"
-# exec: quitting hunk ends the shell, so the pane closes
-"$herdr" pane run "$new" "exec hunk diff --watch $target" >/dev/null
+# exec: quitting hunk ends the shell, so the pane closes. hunk-keep.sh saves and restores the
+# notes, and restarts hunk when its memory grows too big.
+"$herdr" pane run "$new" "exec ~/.config/herdr/scripts/hunk-keep.sh $mode $target" >/dev/null

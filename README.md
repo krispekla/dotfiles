@@ -83,6 +83,13 @@ Both run `worktree-setup/<repo>.sh` first. `<repo>.work` and `<repo>.review` add
 
 **Ports**: every worktree gets its own dev-server port when it's created (from 3100 up, unique across all repos; your main checkout keeps its usual one). It stays reserved while the worktree exists and is released by `cmd+/ x`. It's `{port}` in the tab files and `$PORT` in every shell inside the worktree (`shell/essentials.zsh`), so `pnpm exec vite dev --port $PORT` works by hand too. Registry: `~/.local/state/herdr/ports` (`herdr/scripts/worktree-port.sh`).
 
+## Hunk notes are kept
+
+Hunk keeps review notes only in memory, so they're lost when its pane closes or crashes (hunk issue [#113](https://github.com/modem-dev/hunk/issues/113)). Every hunk pane herdr opens runs through `herdr/scripts/hunk-keep.sh`, which fixes that without anything to do by hand:
+- **Saved** every 15 s (one shared saver for all panes, under 1% of a CPU core) to `<git dir>/hunk-notes/<live|branch>.json` (inside `.git`, never committed), and **added back** when the pane opens again. Notes come back as agent notes; yours keep author `you`. A note whose line isn't in the diff right now stays saved and returns when it is.
+- **Restarted when it grows**: Hunk's `--watch` keeps memory after every reload (up to ~1 GB per pane over a day), so above 700 MB (`HUNK_MAX_MB`) the pane saves, restarts and restores on its own.
+- **Cleared** only by you: **`cmd+/ n`** clears the worktree's notes and saved files (asks first).
+
 ## Project colours
 
 Like VS Code's Peacock: every project and worktree gets its own colour, so you can tell spaces apart at a glance.
