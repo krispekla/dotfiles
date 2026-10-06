@@ -108,13 +108,22 @@ rows = [
   ["terminal_title_stripped"],
 ]
 
-# Spaces rows as herdr's default. Lines marked "worktree-colors" get each worktree's name
-# coloured by scripts/worktree-theme.py (in the generated config herdr actually reads).
+# Spaces rows. herdr doesn't wrap, so scripts/worktree-theme.py reports each space's name as
+# $name, plus $name2 … $name5 when it's too long for one row (it also keeps review worktrees last in their
+# project's group). Lines marked "worktree-colors" get those in the space's colour (in the
+# generated config herdr actually reads).
 [ui.sidebar.spaces]
 rows = [
-  ["state_icon", "workspace"],  # worktree-colors
-  ["branch", "git_status"],
+  ["state_icon", "$name"],  # worktree-colors
+  ["$name2"],  # worktree-colors
+  ["$name3"],  # worktree-colors
+  ["$name4"],  # worktree-colors
+  ["$name5"],  # worktree-colors
+  ["branch", "git_status"],  # worktree-colors
 ]
 
 [ui]
 status_indicators = "symbols"
+# Sidebar width in columns (default 26). herdr can't drag its edge; this applies on reload
+sidebar_width = 38
+sidebar_max_width = 48  # default 36 would cap the width above

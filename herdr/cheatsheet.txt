@@ -24,7 +24,7 @@
    cmd+/ s        restart Storybook in its tab, same port (no install/build)
    cmd+/ R        review worktree for a remote branch → review | git | code | dev…
    cmd+/ x        remove this worktree + close workspace (asks first)
-   cmd+/ p        next colour for this project (again = next one, P = back, esc when happy)
+   cmd+/ p        next colour for this space: project on main, own on a worktree (P = back)
 
  ── TABS ───────────────────────────────────────────────────────────
    cmd+shift+[ ]  previous / next tab       (also ctrl+h / ctrl+l)
