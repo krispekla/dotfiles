@@ -14,6 +14,7 @@ items=(
   "g|lazygit   git tab"
   "r|hunk      right pane: uncommitted changes, live (again = close)"
   "b|branch    right pane: everything this branch changed (again = close)"
+  "n|notes     clear this worktree's hunk notes, saved ones too (asks first)"
   "a|agents    jump to the one waiting on you"
   "s|storybook restart in its tab, same port (no install/build)"
   "w|worktree  new worktree → chat | git | code | terminal"
@@ -116,6 +117,15 @@ review_worktree() {
 }
 
 remove_worktree() {
+# hunk notes are saved and restored automatically (hunk-keep.sh); this is the only way to drop them
+clear_hunk_notes() {
+  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
+  top=$(git -C "$cwd" rev-parse --show-toplevel)
+  printf '\n  Clear all hunk notes in %s,\n  including the saved ones? [y/N] ' "${top/#$HOME/$tilde}"
+  read -rsn1 answer; echo
+  case "$answer" in y|Y) "$S/hunk-notes.py" clear "$top" && printf '\n  Cleared.' && sleep 1 ;; esac
+}
+
   git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
   gitdir=$(git -C "$cwd" rev-parse --path-format=absolute --git-dir)
   common=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)
@@ -160,6 +170,7 @@ run() {
     b) "$S/hunk-pane.sh" branch ;;
     a) "$S/next-waiting-agent.sh" ;;
     s) "$S/storybook-restart.sh" ;;
+    n) clear_hunk_notes ;;
     w) new_worktree ;;
     x) remove_worktree ;;
     R) review_worktree ;;

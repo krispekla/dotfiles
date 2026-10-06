@@ -1,3 +1,4 @@
+
 # Code review output: Hunk
 
 When doing a code review (a branch, a diff or a PR, including `/review-pr`), also put the findings
@@ -8,10 +9,23 @@ into Hunk as inline notes, not only as a chat table.
   (`filePath` repo-relative, `newLine`, a one-line `summary`, details in `rationale`). The
   `hunk-review` skill has the full command reference.
 - Never launch `hunk diff` or other interactive Hunk commands yourself; the TUI belongs to the user.
-  If no session matches, tell the user and suggest they open one.
+  If no session matches, suggest opening one (see "Suggesting Hunk" below).
 - herdr review worktrees open a Hunk pane automatically on the whole branch diff
   (`hunk diff --watch <merge-base with main>`), so a session usually already exists there.
 - Hunk notes are local to the session. Posting to the Azure PR stays a separate, explicit request.
+- herdr's Hunk panes keep their notes: saved every 15 s to `<git dir>/hunk-notes/<live|branch>.json`
+  and added back when the pane reopens or restarts. Restored notes come back as agent notes; the
+  user's own keep author `you`, so treat those as the user's. With no live session, read the
+  saved file instead of saying the notes are gone. Never delete it; the user clears notes with
+  `cmd+/ n`.
+
+# Suggesting Hunk
+
+When Hunk notes would help and no session is open (a review, or a coding task that changed
+several files or has a non-obvious part), suggest it in one line, once per task, with the key:
+"Open Hunk with cmd+shift+r (uncommitted changes) or cmd+/ b (whole branch) and I'll add notes
+there." Don't wait for it: give the full answer in chat as usual, and add the notes if the user
+opens it. Never for small edits, never twice in a row, and never open Hunk yourself.
 
 # Coding workflow: Hunk
 
@@ -20,9 +34,11 @@ when it is open; never open it yourself.
 
 - **After finishing a coding task:** if `hunk session list` shows a session for the repo, add a
   few notes (one `comment apply` batch) on the non-obvious parts only: why an approach was chosen,
-  a risky edge case, something to verify by hand. Skip routine edits. No session: do nothing.
+  a risky edge case, something to verify by hand. Skip routine edits. No session: suggest it
+  once if the task changed several files or has a tricky spot (see "Suggesting Hunk"), else do nothing.
 - **When the user says to check their Hunk comments:** read them with
-  `hunk session comment list --repo <path> --type user`, address each one in the code, then reply
+  `hunk session comment list --repo <path> --type all` (the user's notes: `source` user, or author `you`
+  after a restore), address each one in the code, then reply
   on each with `hunk session comment add --repo <path> --reply-to <note-id> --summary "<what changed>"`.
 - The pane runs with `--watch`, so notes on a file can drop when that file changes; re-add them
   if asked.

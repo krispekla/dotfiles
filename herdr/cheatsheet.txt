@@ -61,6 +61,8 @@
    { / }             previous / next note
    then ask Claude:  "walk me through this change in hunk"
 
+   notes are kept:   saved every 15s, back when the pane reopens or restarts (over 700 MB)
+   cmd+/ n           clear this worktree's hunk notes, saved ones too (asks first)
  ── SHELL (fzf) ─────────────────────────────────────────────────────
    ctrl+r         fuzzy search command history
    ctrl+t         fuzzy pick a file path into the command
