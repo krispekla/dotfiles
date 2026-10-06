@@ -9,8 +9,8 @@ platforms = ["macos"]
 id = "lazygit"
 title = "git"
 placement = "tab"
-# If lazygit crashes, keep the tab open long enough to read why
-command = ["/bin/zsh", "-c", "/opt/homebrew/bin/lazygit || { echo; echo 'lazygit exited with an error. Press any key to close.'; read -k1 }"]
+# q closes the tab; a crash restarts lazygit in it (logged, see scripts/lazygit-keep.sh)
+command = ["/bin/zsh", "-c", "exec $HOME/.config/herdr/scripts/lazygit-keep.sh"]
 
 # New worktree: run ~/.config/herdr/worktree-setup/<repo>.sh + agent, add a lazygit tab
 [[events]]

@@ -90,6 +90,12 @@ Hunk keeps review notes only in memory, so they're lost when its pane closes or 
 - **Restarted when it grows**: Hunk's `--watch` keeps memory after every reload (up to ~1 GB per pane over a day), so above 700 MB (`HUNK_MAX_MB`) the pane saves, restarts and restores on its own.
 - **Cleared** only by you: **`cmd+/ n`** clears the worktree's notes and saved files (asks first).
 
+**lazygit** in the git tab restarts itself (`herdr/scripts/lazygit-keep.sh`); `q` still closes the tab.
+- **After a crash**: logged with its last output to `~/.config/herdr/scripts/lazygit-crash.log`; 3 crashes within a minute stop and show the error.
+- **Every 4 hours, as prevention** (long-running lazygit has crashed after a day): only while you aren't looking at its tab and no rebase / merge / cherry-pick / revert is in progress, so you never see it.
+
+nvim isn't restarted: it would lose unsaved changes and undo history, and its memory stays flat (40–60 MB after a day).
+
 ## Project colours
 
 Like VS Code's Peacock: every project and worktree gets its own colour, so you can tell spaces apart at a glance.
