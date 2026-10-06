@@ -25,6 +25,9 @@ items=(
   "p|colour    next colour for this space (again = next one, P = back)"
   "?|keys      full cheatsheet"
 )
+# Per-machine additions, not in the repo: ~/.config/herdr/menu.local.sh can append to items and
+# define run_local <key> for them (returning 1 for keys that aren't its own)
+[ -f "$HOME/.config/herdr/menu.local.sh" ] && . "$HOME/.config/herdr/menu.local.sh"
 
 # Context of the pane behind the popup; the scripts below read these
 pane="${HERDR_ACTIVE_PANE_ID:-}"
@@ -143,10 +146,12 @@ clear_hunk_notes() {
   root=$(dirname "$common")
   # Detached: closing the workspace also closes this popup. The branch is deleted only if
   # git sees it as merged (branch -d); otherwise it's kept.
-  # Its port goes back to the pool (worktree-port.sh).
+  # Its port goes back to the pool (worktree-port.sh); a per-machine
+  # ~/.config/herdr/worktree-removed.local.sh <worktree>, if there is one, cleans up after it.
   nohup sh -c '
     "$1" worktree remove --workspace "$2" $3 >/dev/null || exit
     "$6/worktree-port.sh" free "$7"
+    [ -x "$HOME/.config/herdr/worktree-removed.local.sh" ] && "$HOME/.config/herdr/worktree-removed.local.sh" "$7"
     "$6/worktree-theme.py"
     [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
   ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" "$S" "$top" >/dev/null 2>&1 &
@@ -178,8 +183,8 @@ run() {
     e) exec "$S/edit-worktree-setup.sh" ;;
     p) next_colour next; return 1 ;;
     P) next_colour prev; return 1 ;;
-    "?") exec less -R "$HOME/.config/herdr/cheatsheet.txt" ;;
-    *) return 1 ;;
+    "?") cat "$HOME/.config/herdr/cheatsheet.txt" "$HOME/.config/herdr/cheatsheet.local.txt" 2>/dev/null | exec less -R ;;
+    *) { declare -F run_local >/dev/null && run_local "$1"; } || return 1 ;;
   esac
 }
 

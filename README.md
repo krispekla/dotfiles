@@ -122,6 +122,7 @@ herdr has no per-workspace colours, so `herdr/scripts/worktree-theme.py` writes 
 
 ## Per-machine things (not in the repo)
 
+- **herdr additions for one machine**: `~/.config/herdr/menu.local.sh` (extra `cmd+/` items: append to `items` and define `run_local <key>`), `cheatsheet.local.txt` (shown under the cheatsheet), and hooks `review-worktree.local.sh <worktree>` (after a review worktree is created) and `worktree-removed.local.sh <worktree>` (after `cmd+/ x`), all in `~/.config/herdr/`. Local work kept in this repo folder goes in `.git/info/exclude`, not `.gitignore`.
 - **Claude instructions with project names or commands**: `~/.claude/CLAUDE.local.md`, imported at the end of `claude/CLAUDE.md`. Anything naming a work project goes there, since this repo is public.
 - **Worktree setup scripts**: `~/.config/herdr/worktree-setup/<repo-folder>.sh` runs in each new worktree of that repo (for example `pnpm install`, or `cp "$REPO_ROOT/.env" .env`). Create or edit one with `cmd+shift+e` from inside the repo. These are gitignored here because repos differ per machine.
 - **Worktree tabs**: `~/.config/herdr/worktree-setup/<repo>.work` and `<repo>.review`, one tab per line (`name | command`). Start from `herdr/examples/`.
