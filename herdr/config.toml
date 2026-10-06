@@ -96,7 +96,7 @@ height = "80%"
 [[keys.command]]
 key = "prefix+shift+h"
 type = "popup"
-command = "less -R ~/.config/herdr/cheatsheet.txt"
+command = "cat ~/.config/herdr/cheatsheet.txt ~/.config/herdr/cheatsheet.local.txt 2>/dev/null | less -R"
 description = "cheatsheet"
 width = "80%"
 height = "90%"

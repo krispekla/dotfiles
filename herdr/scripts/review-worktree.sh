@@ -57,6 +57,8 @@ n=2; while [ -e "$path" ]; do path="$HOME/.herdr/worktrees/$repo/review-$slug-$n
 mkdir -p "$(dirname "$path")"
 git -C "$root" worktree add -q "$path" "$branch"
 port=$("$S/worktree-port.sh" assign "$path")
+# Per-machine extras, not in the repo: ~/.config/herdr/review-worktree.local.sh <worktree>, in the background
+[ -x "$HOME/.config/herdr/review-worktree.local.sh" ] && "$HOME/.config/herdr/review-worktree.local.sh" "$path" >/dev/null 2>&1 &
 
 opened=$("$herdr" worktree open --cwd "$root" --path "$path" --label "review $branch" --focus)
 workspace=$(echo "$opened" | jq -r '[.. | objects | .workspace_id? // empty] | first')
