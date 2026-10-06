@@ -11,7 +11,7 @@
    cmd+1..9       go to tab N
    cmd+shift+c    new chatc tab (Claude)
    cmd+shift+v    new code tab (nvim .)
-   cmd+g          git tab (lazygit)
+   cmd+g          git tab (lazygit; restarts after a crash and every 4h unseen, q closes)
    cmd+shift+r    hunk live diff on the right (again = close)
    cmd+t          new tab (plain terminal)
    ^b ?           herdr: list every binding
