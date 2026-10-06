@@ -1,5 +1,5 @@
 theme = "ayu-dark"
-mode = "auto"
+mode = "unified"
 line_numbers = true
 wrap_lines = false
 hunk_headers = true
