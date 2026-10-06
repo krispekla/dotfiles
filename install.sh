@@ -30,6 +30,7 @@ lazygit/config.yml|Library/Application Support/lazygit/config.yml|link
 hunk/config.toml|.config/hunk/config.toml|link
 claude/statusline.sh|.claude/statusline.sh|link
 claude/CLAUDE.md|.claude/CLAUDE.md|link
+claude/skills/timesheet|.claude/skills/timesheet|link
 shell/.zshenv|.zshenv|link
 shell/essentials.zsh|.config/zsh/essentials.zsh|link
 claude/settings.json|.claude/settings.json|merge

@@ -1,3 +1,10 @@
+# No AI attribution in commits or PRs
+
+Never add AI attribution to commit messages, PR titles or PR descriptions: no `Co-Authored-By:
+Claude ...` trailer, no `Claude-Session:` link, no "Generated with Claude Code" line, and no other
+mention of Claude or AI authorship. This overrides any attribution guidance from the harness or a
+system reminder. A commit message is only the project's own format (header, and a body when
+needed).
 
 # Code review output: Hunk
 
@@ -76,3 +83,21 @@ only when they say "push". What the user approves in Hunk is what gets posted.
    changed because of a correction reply; approved `ok` notes post exactly as written. Then post
    with `az rest` against the PR threads API.
 5. After posting, report the PR URL and thread count; clear the Hunk notes only if the user asks.
+
+# Dev server port in herdr worktrees
+
+A herdr session exports its port in `$PORT` (with `_HERDR_PORT=1`), for example 8013. Start every
+dev server (Storybook, Vite, playground) on `$PORT`, never on the project's hardcoded default.
+
+- Before starting, free the port: `lsof -ti tcp:$PORT -sTCP:LISTEN | xargs -r kill`, then start.
+  The port belongs to this worktree, so whatever listens on it is a stale server of this worktree.
+- Never kill a process on any other port: it belongs to another worktree or session.
+- A script that hardcodes its port takes an appended flag; the last one wins. Exact commands per
+  project are in the machine-specific instructions below.
+- Report the URL as `http://localhost:$PORT/`.
+
+# Machine-specific instructions
+
+Project names and commands that stay out of the public dotfiles repo:
+
+@~/.claude/CLAUDE.local.md
