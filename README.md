@@ -85,14 +85,18 @@ Both run `worktree-setup/<repo>.sh` first. `<repo>.work` and `<repo>.review` add
 
 ## Project colours
 
-Like VS Code's Peacock, per project: each repo gets a colour, its main checkout has it and its worktrees the two nearest hues on the colour wheel (blue project: azure and indigo worktrees), so the colour family says which project you're in and the exact hue which checkout.
+Like VS Code's Peacock: every project and worktree gets its own colour, so you can tell spaces apart at a glance.
+- **Main checkout**: the project's colour, calm tint.
+- **Work worktree**: its own colour, stronger tint, picked to look as different as possible from every other open space (by how different colours look, not just hue).
+- **Review worktree**: a dark purple tab bar with a light purple accent. Purples are reserved for reviews, so purple always means "reviewing". The window title starts with 🔍.
 
-22 colours, all picked to look good as tints on a dark background. Pastels: blue, mauve, green, rose, aqua, indigo, pink, emerald, sapphire, violet, magenta, teal, azure, lavender, fuchsia, sky (Catppuccin Mocha plus a few from Tokyo Night, Dracula and One Dark). Deeper jewel tones: cobalt, hotpink, jade, grape, turquoise, purple (Tailwind, Solarized, Synthwave). Warm ones (peach, yellow, orange) are left out: they go brown as dark tints. The colour goes on the frame only, never on the panes or the sidebar background.
-- **The space you're in**: tinted tab bar, active tab and focused pane border in full colour, its Spaces row tinted, Ghostty window title `🔵 <name>`. Worktrees get a stronger tint, `work · <name> · :<port>` (or `review · …`) at the right of the tab bar, and the port in the title.
-- **Every coloured space**: its name in its colour in the Spaces and Agents lists.
+26 colours for projects and work worktrees, picked to work on a dark background: blues (blue, sapphire, sky, azure, cobalt, indigo, aqua, lavender), greens (green, emerald, jade, teal, turquoise, lime), warm ones (red, coral, tangerine, peach, amber, gold, yellow) and pinks (rose, pink, magenta, hotpink, fuchsia). 6 purples for reviews. Each tint is as strong as it can be while the active tab's text (drawn in the tab bar colour) stays readable. The colour goes on the frame only, never on the panes or the sidebar background.
+- **The space you're in**: tinted tab bar, active tab and focused pane border in full colour, its Spaces row tinted, Ghostty window title `🔵 <name>`. Worktrees also get `work · <name> · :<port>` (or `review · …`) at the right of the tab bar, and the port in the title.
+- **Every coloured space**: its name in its colour in the Spaces and Agents lists, and a worktree's branch line too.
+- **Spaces list**: a name too long for the sidebar continues on the next rows, so the whole name always shows (herdr can't wrap or show tooltips, so the script reports the name in parts), and each project's review worktrees always sit last in its group, after the work worktrees.
 - **Anything that isn't a git repo**: grey.
 
-A repo gets its colour the first time it's seen (least used first: blue, mauve and green before the rest) and keeps it in `~/.local/state/herdr/project-colours`. Don't like it? **`cmd+/ p`** moves the project you're in to the next colour no other project has; the menu stays open, so keep pressing `p` (`P` goes back) until you like it, then esc.
+A colour is picked the first time a space is seen and kept in `~/.local/state/herdr/project-colours` (per repo) and `worktree-colours` (per worktree). Don't like it? **`cmd+/ p`** moves the space you're in to the next colour of its set that no other open space has: on a main checkout that's the project's colour, on a worktree only that worktree's. The menu stays open, so keep pressing `p` (`P` goes back) until you like it, then esc.
 
 Use one Ghostty window for herdr. With a second one attached, each window can show a different space, but the colours are one config for all of them and follow whichever window switched last, and herdr only updates the title of the window used most recently.
 

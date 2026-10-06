@@ -21,7 +21,7 @@ items=(
   "R|review    review worktree for a remote branch (pick from list)"
   "f|lf        file browser"
   "e|setup     edit this repo's worktree setup"
-  "p|colour    next colour for this project (again = next one, P = back)"
+  "p|colour    next colour for this space (again = next one, P = back)"
   "?|keys      full cheatsheet"
 )
 
