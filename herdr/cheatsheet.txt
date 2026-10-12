@@ -28,6 +28,7 @@
    pr tab         the PR like a docs page: j/k scroll · r refresh · o browser · q quit
    ticket tab     the branch's Jira ticket the same way (needs trac), work worktrees
    cmd+/ x        remove this worktree + close workspace (asks first)
+   cmd+/ t        Chrome tab group: Storybook + this worktree's PR + task from its description
    cmd+/ p        next colour for this space: project on main, own on a worktree (P = back)
 
  ── TABS ───────────────────────────────────────────────────────────

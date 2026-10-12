@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "herdr tab groups",
+  "description": "Opens a worktree's Storybook and PR in a named, coloured tab group. Started by herdr (cmd+/ t).",
+  "version": "1.0",
+  "permissions": [
+    "tabs",
+    "tabGroups"
+  ]
+}
