@@ -54,7 +54,7 @@ backup() {
 requirements() { # fresh login + interactive zsh, like a new terminal: PATH and fzf come only from your zsh config
   env -i HOME="$HOME" USER="${USER:-}" TERM="${TERM:-xterm-256color}" PATH=/usr/bin:/bin:/usr/sbin:/sbin zsh -lic '
     r() { if eval "$2" >/dev/null 2>&1; then echo "REQ ok       $1"; else echo "REQ missing  $1  ($3)"; fi; }
-    for c in herdr hunk claude nvim lazygit jq gh lf fzf rg fd gitleaks; do
+    for c in herdr hunk claude nvim lazygit jq gh lf fzf rg fd gitleaks glow; do
       r "$c" "command -v $c" "see README install steps"
     done
     r "fzf keys (ctrl+r, ctrl+t)" "(( \$+functions[fzf-history-widget] ))" "load ~/.config/zsh/essentials.zsh from ~/.zshrc"

@@ -1,0 +1,12 @@
+# Copy to ~/.config/herdr/worktree-setup/<repo>.review-prompt (and <repo>.work-prompt for work worktrees).
+# Starter prompt typed into the new worktree's agent once it's up, not sent: you read, edit, press Enter.
+# One template per line; the first line whose placeholders all resolve is used, none = nothing typed.
+#   {branch}        the branch
+#   {pr}            the worktree's PR link (worktree-pr.sh find; Azure DevOps)
+#   {ticket}        the ticket key: in the branch name (feat/abc-1234-x -> ABC-1234), else the
+#                   first task linked in the PR's description
+#   {ticket:ABC}    the same, only for project ABC
+# One line per template: a newline would send it.
+/review-pr {pr} Also check it against the ticket {ticket}, but treat the ticket as a hint about intent, not a spec.
+/review-pr {pr}
+Review the changes on {branch} against main.

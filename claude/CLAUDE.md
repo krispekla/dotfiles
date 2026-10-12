@@ -84,6 +84,21 @@ only when they say "push". What the user approves in Hunk is what gets posted.
    with `az rest` against the PR threads API.
 5. After posting, report the PR URL and thread count; clear the Hunk notes only if the user asks.
 
+# PR link in herdr worktrees
+
+herdr keeps one PR link per worktree, like the port, and `cmd+/ t` opens it in Chrome next to
+Storybook. Whenever a PR link becomes known for the current worktree, save it:
+
+```bash
+~/.config/herdr/scripts/worktree-pr.sh set "$(git rev-parse --show-toplevel)" <pr-url>
+```
+
+- After opening a PR (`open-a-pr`, `az repos pr create`): the PR's web URL, e.g.
+  `https://dev.azure.com/<org>/<project>/_git/<repo>/pullrequest/<id>`.
+- When reviewing a PR in a review worktree: its URL, if `worktree-pr.sh get` doesn't already
+  print the same one.
+- Run it silently, as part of the step; no need to mention it. Skip it outside a git worktree.
+
 # Dev server port in herdr worktrees
 
 A herdr session exports its port in `$PORT` (with `_HERDR_PORT=1`), for example 8013. Start every

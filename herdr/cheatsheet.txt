@@ -23,6 +23,10 @@
    cmd+shift+e    edit this repo's worktree setup commands
    cmd+/ s        restart Storybook in its tab, same port (no install/build)
    cmd+/ R        review worktree for a remote branch → review | git | code | dev…
+                  new worktrees: notification when setup is done, starter prompt typed
+                  (not sent) from <repo>.work-prompt / <repo>.review-prompt
+   pr tab         the PR like a docs page: j/k scroll · r refresh · o browser · q quit
+   ticket tab     the branch's Jira ticket the same way (needs trac), work worktrees
    cmd+/ x        remove this worktree + close workspace (asks first)
    cmd+/ p        next colour for this space: project on main, own on a worktree (P = back)
 

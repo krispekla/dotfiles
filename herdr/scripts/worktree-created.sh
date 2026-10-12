@@ -2,7 +2,8 @@
 # herdr worktree.created hook (wired in plugins/kris-tools). Lays out the new workspace as
 # chat | git | code | <repo>.work tabs | terminal. The chat tab runs ~/.config/herdr/worktree-setup/<repo>.sh
 # first, then the agent from ~/.config/herdr/agent. The worktree gets its own port (worktree-port.sh):
-# $PORT in its shells, {port} in <repo>.work.
+# $PORT in its shells, {port} in <repo>.work. <repo>.work-prompt, if there is one, is typed into the
+# agent once it's up, not sent (agent-prompt.sh).
 set -eu
 exec >>"$HOME/.config/herdr/scripts/worktree-created.log" 2>&1
 echo "--- $(date) ${HERDR_PLUGIN_EVENT_JSON:-}"
@@ -31,15 +32,18 @@ tab=$("$herdr" pane get "$pane" | jq -r '.result.pane.tab_id')
 
 # The code tab waits for this marker so nvim (and its LSP) starts after setup. It lives in the
 # worktree's own git dir: never shows as untracked, removed with the worktree.
+# setup-run.sh notifies when setup is done or failed.
 marker="$(git -C "$path" rev-parse --absolute-git-dir)/herdr-setup-done"
 if [ -f "$setup" ]; then
-  "$herdr" pane run "$pane" "REPO_ROOT='$root' sh '$setup'; s=\$?; touch '$marker'; [ \$s -eq 0 ] && $agent" >/dev/null
+  "$herdr" pane run "$pane" "sh '$S/setup-run.sh' '$root' '$setup' '$marker' '$branch' && $agent" >/dev/null
   editor="echo 'Waiting for setup in the chat tab…'; while [ ! -e '$marker' ]; do sleep 1; done; nvim ."
 else
   touch "$marker"
   "$herdr" pane run "$pane" "$agent" >/dev/null
   editor="nvim ."
 fi
+# Starter prompt from <repo>.work-prompt, typed into the agent but not sent
+nohup "$S/agent-prompt.sh" "$pane" "$path" work "$marker" >/dev/null 2>&1 &
 
 opened=$("$herdr" plugin pane open --plugin kris.tools --entrypoint lazygit --placement tab \
   --workspace "$workspace" --cwd "$path" --no-focus)
