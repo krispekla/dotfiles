@@ -7,3 +7,7 @@
 # PORT=… works when the app reads it (Next.js, Express). Vite and others need a flag instead:
 #   dev:{port} | pnpm exec vite dev --port {port} --strictPort
 dev:{port} | PORT={port} pnpm dev
+
+# Jira ticket from the branch name, rendered like a docs page (needs the trac CLI).
+# PROJECT keeps it to one project's keys.
+# ticket | ~/.config/herdr/scripts/ticket-view.sh PROJECT

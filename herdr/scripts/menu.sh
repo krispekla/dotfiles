@@ -49,8 +49,13 @@ new_worktree() {
   fi
   printf '\n  Branch name (e.g. feat/xyz), empty to cancel: '
   read -r branch
-  if [ -n "$branch" ]; then
-    "$herdr" worktree create --cwd "$cwd" --branch "$branch" --focus >/dev/null
+  [ -n "$branch" ] || return 0
+  # herdr only creates worktrees from the repo's main checkout, not from a linked worktree
+  root=$(dirname "$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)")
+  if ! err=$("$herdr" worktree create --cwd "$root" --branch "$branch" --focus 2>&1 >/dev/null); then
+    msg=$(jq -r '.error.message // empty' <<<"$err" 2>/dev/null)
+    printf '\n  Could not create the worktree:\n  %s\n  Press any key.' "${msg:-$err}"
+    read -rsn1
   fi
 }
 
@@ -119,7 +124,6 @@ review_worktree() {
   "$S/review-worktree.sh" "$cwd" "$branch"
 }
 
-remove_worktree() {
 # hunk notes are saved and restored automatically (hunk-keep.sh); this is the only way to drop them
 clear_hunk_notes() {
   git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
@@ -130,6 +134,7 @@ clear_hunk_notes() {
 }
 
   git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
+remove_worktree() {
   gitdir=$(git -C "$cwd" rev-parse --path-format=absolute --git-dir)
   common=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)
   if [ "$gitdir" = "$common" ]; then
@@ -146,12 +151,14 @@ clear_hunk_notes() {
   root=$(dirname "$common")
   # Detached: closing the workspace also closes this popup. The branch is deleted only if
   # git sees it as merged (branch -d); otherwise it's kept.
-  # Its port goes back to the pool (worktree-port.sh); a per-machine
+  # Its port goes back to the pool (worktree-port.sh) and its saved PR link is dropped
+  # (worktree-pr.sh); a per-machine
   # ~/.config/herdr/worktree-removed.local.sh <worktree>, if there is one, cleans up after it.
   nohup sh -c '
     "$1" worktree remove --workspace "$2" $3 >/dev/null || exit
     "$6/worktree-port.sh" free "$7"
     [ -x "$HOME/.config/herdr/worktree-removed.local.sh" ] && "$HOME/.config/herdr/worktree-removed.local.sh" "$7"
+    "$6/worktree-pr.sh" free "$7"
     "$6/worktree-theme.py"
     [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
   ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" "$S" "$top" >/dev/null 2>&1 &

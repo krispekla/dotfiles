@@ -18,6 +18,9 @@ brew "gitleaks"
 brew "lf"
 brew "fzf"
 
+# PR tab of review worktrees (pr-view.sh renders the PR description)
+brew "glow"
+
 # LazyVim pickers and language servers (typescript/tailwind extras)
 brew "ripgrep"
 brew "fd"

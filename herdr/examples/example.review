@@ -13,3 +13,5 @@ test       | pnpm test --watch
 pr | gh pr view {branch} --comments
 # pr | glab mr view {branch} --comments
 # pr | az repos pr list --source-branch {branch} --status active -o table
+# Azure DevOps, rendered like a docs page (r refresh, o open in browser):
+# pr | ~/.config/herdr/scripts/pr-view.sh

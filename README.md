@@ -80,7 +80,7 @@ Where secrets and machine-specific values go instead (never in the repo):
 | Port | its own, e.g. 3100 | its own, e.g. 3101 |
 | Clean up | `cmd+/` `x` | `cmd+/` `x` (the local branch copy goes too if it matches origin) |
 
-Both run `worktree-setup/<repo>.sh` first. `<repo>.work` and `<repo>.review` add tabs per repo (one `name | command` per line): e.g. a dev server (`dev:{port}`), tests, or for review the PR page for that repo's host (GitHub, GitLab, Azure DevOps). See `herdr/examples/`.
+Both run `worktree-setup/<repo>.sh` first, with a herdr notification when it's done or failed. `<repo>.work` and `<repo>.review` add tabs per repo (one `name | command` per line): e.g. a dev server (`dev:{port}`), tests, or for review the PR page for that repo's host (GitHub, GitLab, Azure DevOps). See `herdr/examples/`. `<repo>.work-prompt` and `<repo>.review-prompt` type a starter prompt into the new agent without sending it, e.g. `/review-pr {pr}`. `pr-view.sh` (Azure DevOps PR) and `ticket-view.sh` (Jira ticket, via `trac`) show a page like docs in a tab, with `r` to refresh.
 
 **Ports**: every worktree gets its own dev-server port when it's created (from 3100 up, unique across all repos; your main checkout keeps its usual one). It stays reserved while the worktree exists and is released by `cmd+/ x`. It's `{port}` in the tab files and `$PORT` in every shell inside the worktree (`shell/essentials.zsh`), so `pnpm exec vite dev --port $PORT` works by hand too. Registry: `~/.local/state/herdr/ports` (`herdr/scripts/worktree-port.sh`).
 

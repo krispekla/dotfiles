@@ -9,6 +9,7 @@
 #   <repo>.review  extra tabs, one per line: `name | command`. {port} = this worktree's own port
 #                  (worktree-port.sh, also $PORT in its shells), {branch} = the branch.
 #                  See herdr/examples/example.review in the dotfiles repo.
+#   <repo>.review-prompt  starter prompt typed into the agent, not sent (agent-prompt.sh)
 set -eu
 exec >>"$HOME/.config/herdr/scripts/review-worktree.log" 2>&1
 echo "--- $(date) $*"
@@ -73,11 +74,13 @@ wait_setup="echo 'Waiting for setup in the review tab…'; while [ ! -e '$marker
 
 # review: setup, then the agent; whole-branch diff on the right
 if [ -f "$setup" ]; then
-  "$herdr" pane run "$pane" "REPO_ROOT='$root' sh '$setup'; s=\$?; touch '$marker'; [ \$s -eq 0 ] && $agent" >/dev/null
+  "$herdr" pane run "$pane" "sh '$S/setup-run.sh' '$root' '$setup' '$marker' 'review $branch' && $agent" >/dev/null
 else
   touch "$marker"
   "$herdr" pane run "$pane" "$agent" >/dev/null
 fi
+# Starter prompt from <repo>.review-prompt, typed into the agent but not sent
+nohup "$S/agent-prompt.sh" "$pane" "$path" review "$marker" >/dev/null 2>&1 &
 HERDR_ACTIVE_PANE_ID="$pane" "$S/hunk-pane.sh" branch
 
 new_tab() { # $1 label, $2 command (empty = plain shell)
