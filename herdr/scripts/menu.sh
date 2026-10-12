@@ -15,6 +15,7 @@ items=(
   "r|hunk      right pane: uncommitted changes, live (again = close)"
   "b|branch    right pane: everything this branch changed (again = close)"
   "n|notes     clear this worktree's hunk notes, saved ones too (asks first)"
+  "t|chrome    tab group: Storybook + PR + task (work blue-ish, review purple-ish)"
   "a|agents    jump to the one waiting on you"
   "s|storybook restart in its tab, same port (no install/build)"
   "w|worktree  new worktree → chat | git | code | terminal"
@@ -133,8 +134,8 @@ clear_hunk_notes() {
   case "$answer" in y|Y) "$S/hunk-notes.py" clear "$top" && printf '\n  Cleared.' && sleep 1 ;; esac
 }
 
-  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
 remove_worktree() {
+  git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1 || { not_repo; return; }
   gitdir=$(git -C "$cwd" rev-parse --path-format=absolute --git-dir)
   common=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)
   if [ "$gitdir" = "$common" ]; then
@@ -157,8 +158,8 @@ remove_worktree() {
   nohup sh -c '
     "$1" worktree remove --workspace "$2" $3 >/dev/null || exit
     "$6/worktree-port.sh" free "$7"
-    [ -x "$HOME/.config/herdr/worktree-removed.local.sh" ] && "$HOME/.config/herdr/worktree-removed.local.sh" "$7"
     "$6/worktree-pr.sh" free "$7"
+    [ -x "$HOME/.config/herdr/worktree-removed.local.sh" ] && "$HOME/.config/herdr/worktree-removed.local.sh" "$7"
     "$6/worktree-theme.py"
     [ "$4" != "(detached)" ] && git -C "$5" branch -d "$4" >/dev/null 2>&1
   ' _ "$herdr" "$HERDR_ACTIVE_WORKSPACE_ID" "$([ "$dirty" -gt 0 ] && echo --force)" "$branch" "$root" "$S" "$top" >/dev/null 2>&1 &
@@ -183,6 +184,7 @@ run() {
     a) "$S/next-waiting-agent.sh" ;;
     s) "$S/storybook-restart.sh" ;;
     n) clear_hunk_notes ;;
+    t) "$S/chrome-group.sh" ;;
     w) new_worktree ;;
     x) remove_worktree ;;
     R) review_worktree ;;
