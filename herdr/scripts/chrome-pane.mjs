@@ -2,7 +2,7 @@
 import { spawn } from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import { existsSync, realpathSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
@@ -120,13 +120,6 @@ export class Browser extends EventEmitter {
     });
   }
 
-  async screenshot() {
-    const { data } = await this.send('Page.captureScreenshot', {
-      format: 'png', captureBeyondViewport: false,
-    });
-    return data;
-  }
-
   async close() {
     if (this.child && this.child.exitCode === null && this.child.signalCode === null) {
       this.child.kill('SIGTERM');
@@ -147,17 +140,135 @@ export function viewport(columns, rows, cell = { width: 8, height: 16 }) {
   };
 }
 
-export function kittyFrame(png, view, id, previous) {
-  let output = '\x1b[3;1H';
-  for (let offset = 0; offset < png.length; offset += 4096) {
-    const more = offset + 4096 < png.length ? 1 : 0;
-    const command = offset === 0
-      ? `a=T,f=100,t=d,i=${id},p=1,c=${view.columns},r=${view.rows},q=${previous ? 1 : 0},m=${more}`
-      : `m=${more}`;
-    output += `\x1b_G${command};${png.slice(offset, offset + 4096)}\x1b\\`;
+export function kittyFrame(path, view, id) {
+  const encoded = Buffer.from(path).toString('base64');
+  return `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=${id},p=1,c=${view.columns},r=${view.rows},q=0;${encoded}\x1b\\`;
+}
+
+export class LatestFrame {
+  frame = null;
+  waiter = null;
+
+  push(frame) {
+    this.frame = frame;
+    this.wake();
   }
-  if (previous) output += `\x1b_Ga=d,d=I,i=${previous},q=1\x1b\\`;
-  return output;
+
+  wake() {
+    this.waiter?.();
+    this.waiter = null;
+  }
+
+  async next() {
+    if (!this.frame) await new Promise((resolve) => { this.waiter = resolve; });
+    const frame = this.frame;
+    this.frame = null;
+    return frame;
+  }
+}
+
+export class KittyRenderer {
+  previous = 0;
+
+  constructor(input, path, output = process.stdout) {
+    this.input = input;
+    this.path = path;
+    this.output = output;
+  }
+
+  async render(png, view) {
+    if (png === this.png && view.columns === this.columns && view.rows === this.rows) return;
+    const id = this.previous === 1 ? 2 : 1;
+    // The terminal must consume the file before it can be overwritten by the next frame.
+    await writeFile(this.path, Buffer.from(png, 'base64'), { mode: 0o600 });
+    let cleanup;
+    const acknowledged = new Promise((resolve, reject) => {
+      const receive = (reply, fields) => {
+        if (fields.i !== String(id)) return;
+        cleanup();
+        if (reply === 'OK') resolve();
+        else reject(new Error(`Terminal graphics failed: ${reply}`));
+      };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('No Kitty graphics acknowledgement. Use Ghostty and enable herdr terminal.kitty_graphics.'));
+      }, 5000);
+      cleanup = () => { clearTimeout(timer); this.input.off('graphics', receive); };
+      this.input.on('graphics', receive);
+    });
+    const abort = new AbortController();
+    try {
+      const drained = this.output.write(kittyFrame(this.path, view, id))
+        ? Promise.resolve() : once(this.output, 'drain', { signal: abort.signal });
+      await Promise.all([acknowledged, drained]);
+    } finally {
+      cleanup();
+      abort.abort();
+    }
+    if (this.previous) this.output.write(`\x1b_Ga=d,d=I,i=${this.previous},q=2\x1b\\`);
+    this.previous = id;
+    this.png = png;
+    this.columns = view.columns;
+    this.rows = view.rows;
+  }
+}
+
+export class ActionQueue {
+  items = [];
+  busy = false;
+  closed = false;
+  idle = Promise.resolve();
+
+  constructor(dispatchMouse, fail) {
+    this.dispatchMouse = dispatchMouse;
+    this.fail = fail;
+  }
+
+  add(action) {
+    if (this.closed) return;
+    this.items.push({ action });
+    this.start();
+  }
+
+  mouse(event) {
+    if (this.closed) return;
+    const tail = this.items.at(-1);
+    if (tail?.mouse?.type === event.type && tail.mouse.modifiers === event.modifiers
+        && tail.mouse.buttons === event.buttons
+        && ['mouseMoved', 'mouseWheel'].includes(event.type)) {
+      tail.mouse = event.type === 'mouseWheel'
+        ? { ...event, deltaX: tail.mouse.deltaX + event.deltaX, deltaY: tail.mouse.deltaY + event.deltaY }
+        : event;
+    } else {
+      const entry = { mouse: event };
+      entry.action = () => this.dispatchMouse(entry.mouse);
+      this.items.push(entry);
+    }
+    this.start();
+  }
+
+  start() {
+    if (!this.busy) this.idle = this.drain();
+  }
+
+  async drain() {
+    this.busy = true;
+    try {
+      while (!this.closed && this.items.length) await this.items.shift().action();
+    } catch (error) {
+      this.closed = true;
+      this.items.length = 0;
+      this.fail(error);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  async close() {
+    this.closed = true;
+    this.items.length = 0;
+    await this.idle;
+  }
 }
 
 export function mouseEvent(button, column, row, released, view) {
@@ -250,7 +361,11 @@ export class TerminalInput extends EventEmitter {
       const focus = this.pending.match(/^\x1b\[([IO])/);
       if (mouse) this.emit('mouse', +mouse[1], +mouse[2], +mouse[3], mouse[4] === 'm');
       else if (geometry) this.emit('geometry', { height: +geometry[1], width: +geometry[2] });
-      else if (graphics) this.emit('graphics', graphics[2]);
+      else if (graphics) {
+        this.emit('graphics', graphics[2], Object.fromEntries(
+          graphics[1].split(',').map((field) => field.split('=')),
+        ));
+      }
       else if (focus) this.emit('focus', focus[1] === 'I');
       const match = mouse || geometry || graphics || focus;
       if (match) {
@@ -289,6 +404,8 @@ export async function run(url) {
   webURL(url);
   const browser = await Browser.launch();
   const input = new TerminalInput();
+  const frames = new LatestFrame();
+  const renderer = new KittyRenderer(input, join(browser.profile, 'terminal-frame.png'));
   let running = true;
   let failure;
   let view;
@@ -299,25 +416,33 @@ export async function run(url) {
   let dialog = false;
   let focused = true;
   let graphicsReady = false;
-  let firstFrameAt;
-  let previous = 0;
-  let actions = Promise.resolve();
-  const stop = () => { running = false; };
+  let streaming = false;
+  let lastFrameAt = 0;
+  const stop = () => { running = false; frames.wake(); };
   const fail = (error) => { failure = error; stop(); };
+  const actions = new ActionQueue(
+    (event) => browser.send('Input.dispatchMouseEvent', event), fail,
+  );
   const enqueue = (action) => {
-    actions = actions.then(() => running && action()).catch(fail);
+    actions.add(action);
   };
+  let lastHeader = '';
   const header = () => {
     const width = process.stdout.columns;
     const top = `Chrome (experimental${graphicsReady ? '; graphics OK' : ''}) | Ctrl+O URL | Ctrl+R reload | Ctrl+Q quit`;
     const bottom = address === null ? message || currentURL : `URL: ${address}`;
-    process.stdout.write(`\x1b[1;1H\x1b[2K${top.slice(0, width - 1)}\x1b[2;1H\x1b[2K${plain(bottom).slice(0, width - 1)}`);
+    const text = `\x1b[1;1H\x1b[2K${top.slice(0, width - 1)}\x1b[2;1H\x1b[2K${plain(bottom).slice(0, width - 1)}`;
+    if (text !== lastHeader) { process.stdout.write(text); lastHeader = text; }
   };
   const onData = (data) => input.write(data);
+  const onResize = () => { header(); frames.wake(); };
   input.on('geometry', (value) => {
-    if (value.width > 0 && value.width <= 100 && value.height > 0 && value.height <= 200) cell = value;
+    if (value.width > 0 && value.width <= 100 && value.height > 0 && value.height <= 200) {
+      cell = value;
+      frames.wake();
+    }
   });
-  input.on('focus', (value) => { focused = value; });
+  input.on('focus', (value) => { focused = value; frames.wake(); });
   input.on('graphics', (reply) => {
     if (reply !== 'OK') fail(new Error(`Terminal graphics failed: ${reply}`));
     else { graphicsReady = true; header(); }
@@ -329,7 +454,7 @@ export async function run(url) {
   input.on('mouse', (...args) => {
     if (!view || address !== null) return;
     const event = mouseEvent(...args, view);
-    if (event) enqueue(() => browser.send('Input.dispatchMouseEvent', event));
+    if (event) actions.mouse(event);
   });
   input.on('key', (text, key) => {
     if (key.ctrl && ['q', 'c'].includes(key.name)) return stop();
@@ -369,15 +494,27 @@ export async function run(url) {
     });
   });
   browser.on('disconnected', (error) => { if (running) fail(error); });
+  browser.on('Page.screencastFrame', (frame) => {
+    browser.send('Page.screencastFrameAck', { sessionId: frame.sessionId }).catch((error) => {
+      if (running) fail(error);
+    });
+    if (running && focused && !dialog) frames.push(frame.data);
+  });
   browser.on('Page.frameNavigated', ({ frame }) => {
     if (!frame.parentId) { currentURL = frame.url; message = ''; header(); }
   });
   browser.on('Page.javascriptDialogOpening', ({ message: text }) => {
     dialog = true;
+    frames.wake();
     message = `Dialog: ${text} (Enter accepts, Esc dismisses; prompt text is not supported)`;
     header();
   });
-  browser.on('Page.javascriptDialogClosed', () => { dialog = false; message = ''; header(); });
+  browser.on('Page.javascriptDialogClosed', () => {
+    dialog = false;
+    message = '';
+    header();
+    frames.wake();
+  });
   browser.on('Page.windowOpen', () => { message = 'Popup requested: use normal Chrome for popup windows.'; header(); });
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
@@ -386,40 +523,53 @@ export async function run(url) {
   try {
     process.stdin.setRawMode(true);
     process.stdin.on('data', onData);
+    process.stdout.on('resize', onResize);
     process.stdin.resume();
     process.stdout.write('\x1b[?1049h\x1b[?25l\x1b[?1002h\x1b[?1006h\x1b[?1004h\x1b[?2004h\x1b[16t');
     header();
     await browser.navigate(url);
     while (running) {
-      if (firstFrameAt && !graphicsReady && Date.now() - firstFrameAt > 5000) {
-        throw new Error('No Kitty graphics acknowledgement. Use Ghostty and enable herdr terminal.kitty_graphics.');
-      }
-      if (!focused || dialog) { await sleep(200); continue; }
       const next = viewport(process.stdout.columns, process.stdout.rows, cell);
       if (!view || next.width !== view.width || next.height !== view.height) {
+        frames.frame = null;
         await browser.resize(next.width, next.height);
         view = next;
       }
-      const png = await browser.screenshot();
+      if ((!focused || dialog) && streaming) {
+        await browser.send('Page.stopScreencast');
+        streaming = false;
+        frames.frame = null;
+      } else if (focused && !dialog && !streaming) {
+        await browser.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 });
+        streaming = true;
+      }
+      let png = await frames.next();
       if (!running) break;
-      const id = previous === 1 ? 2 : 1;
-      const output = kittyFrame(png, view, id, previous);
-      firstFrameAt ??= Date.now();
-      if (!process.stdout.write(output)) await once(process.stdout, 'drain');
-      previous = id;
-      header();
-      await sleep(200);
+      if (!png || !focused || dialog) continue;
+      const delay = 1000 / 30 - (performance.now() - lastFrameAt);
+      if (delay > 0) await sleep(delay);
+      if (!running || !focused || dialog) continue;
+      if (frames.frame) {
+        png = frames.frame;
+        frames.frame = null;
+      }
+      // Discard a frame from the old viewport while Chrome is applying a resize.
+      const dimensions = Buffer.from(png.slice(0, 32), 'base64');
+      if (dimensions.readUInt32BE(16) !== view.width || dimensions.readUInt32BE(20) !== view.height) continue;
+      await renderer.render(png, view);
+      lastFrameAt = performance.now();
     }
   } finally {
     running = false;
     process.stdin.off('data', onData);
+    process.stdout.off('resize', onResize);
     process.stdin.setRawMode(wasRaw || false);
     process.stdin.pause();
     input.close();
     process.stdout.write('\x1b_Ga=d,d=I,i=1,q=2\x1b\\\x1b_Ga=d,d=I,i=2,q=2\x1b\\'
       + '\x1b[?2004l\x1b[?1004l\x1b[?1006l\x1b[?1002l\x1b[?25h\x1b[?1049l');
     for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.off(signal, stop);
-    await actions;
+    await actions.close();
     await browser.close();
   }
   if (failure) throw failure;

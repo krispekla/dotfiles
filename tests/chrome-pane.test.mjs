@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { spawnSync } from 'node:child_process';
 import { access, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
@@ -8,7 +8,8 @@ import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import test from 'node:test';
 import {
-  Browser, CHROME, TerminalInput, keyEvent, kittyFrame, mouseEvent, viewport, webURL,
+  ActionQueue, Browser, CHROME, KittyRenderer, LatestFrame, TerminalInput,
+  keyEvent, kittyFrame, mouseEvent, viewport, webURL,
 } from '../herdr/scripts/chrome-pane.mjs';
 
 test('only web navigation is accepted', () => {
@@ -45,14 +46,118 @@ test('printable input, Unicode, Enter, navigation and modified keys', () => {
   assert.equal(keyEvent('', { name: 'unsupported' }), null);
 });
 
-test('Kitty frames are chunked, positioned below the header and bounded to two image IDs', () => {
-  const png = 'a'.repeat(9000);
-  const output = kittyFrame(png, viewport(80, 24), 2, 1);
-  assert.ok(output.startsWith('\x1b[3;1H\x1b_Ga=T,f=100,t=d,i=2,p=1,c=80,r=22,q=1,m=1;'));
-  assert.equal((output.match(/\x1b_Gm=/g) || []).length, 2);
-  assert.ok(output.includes('\x1b_Gm=0;'));
-  assert.ok(output.endsWith('\x1b_Ga=d,d=I,i=1,q=1\x1b\\'));
-  assert.ok(kittyFrame('abc', viewport(80, 24), 1, 0).includes('q=0,m=0'));
+test('Kitty frames transfer a file reference instead of image bytes through the terminal', () => {
+  const path = '/tmp/chrome-frame.png';
+  const output = kittyFrame(path, viewport(80, 24), 2);
+  assert.equal(output, `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=2,p=1,c=80,r=22,q=0;${Buffer.from(path).toString('base64')}\x1b\\`);
+  assert.ok(output.length < 200);
+});
+
+test('latest-frame queue drops obsolete frames and can be woken for resize or quit', async () => {
+  const frames = new LatestFrame();
+  frames.push('old');
+  frames.push('new');
+  assert.equal(await frames.next(), 'new');
+  const pending = frames.next();
+  frames.push('next');
+  assert.equal(await pending, 'next');
+  const quitting = frames.next();
+  frames.wake();
+  assert.equal(await quitting, null);
+});
+
+test('renderer waits for file consumption and backpressure, then skips identical frames', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'chrome-render-test-'));
+  const input = new EventEmitter();
+  const output = new EventEmitter();
+  const writes = [];
+  output.write = (text) => { writes.push(text); output.emit('write'); return false; };
+  try {
+    const path = join(directory, 'frame.png');
+    const renderer = new KittyRenderer(input, path, output);
+    const written = once(output, 'write');
+    let completed = false;
+    const drawing = renderer.render('aGVsbG8=', viewport(80, 24)).then(() => { completed = true; });
+    await written;
+    assert.equal(await readFile(path, 'utf8'), 'hello');
+    assert.equal((await stat(path)).mode & 0o777, 0o600);
+    input.emit('graphics', 'OK', { i: '99' });
+    assert.equal(completed, false);
+    input.emit('graphics', 'OK', { i: '1' });
+    await sleep(0);
+    assert.equal(completed, false);
+    output.emit('drain');
+    await drawing;
+    assert.equal(completed, true);
+    const count = writes.length;
+    await renderer.render('aGVsbG8=', viewport(80, 24));
+    assert.equal(writes.length, count);
+    output.write = (text) => { writes.push(text); output.emit('write'); return true; };
+    const nextWritten = once(output, 'write');
+    const next = renderer.render('bmV4dA==', viewport(80, 24));
+    await nextWritten;
+    input.emit('graphics', 'OK', { i: '2' });
+    await next;
+    assert.ok(writes.at(-1).includes('a=d,d=I,i=1'));
+    assert.equal(input.listenerCount('graphics'), 0);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('renderer surfaces terminal image loading errors', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'chrome-render-error-'));
+  const input = new EventEmitter();
+  const output = new EventEmitter();
+  output.write = () => { output.emit('write'); return true; };
+  try {
+    const renderer = new KittyRenderer(input, join(directory, 'frame.png'), output);
+    const written = once(output, 'write');
+    const rejected = assert.rejects(renderer.render('aGVsbG8=', viewport(80, 24)), /ENOENT/);
+    await written;
+    input.emit('graphics', 'ENOENT: missing file', { i: '1' });
+    await rejected;
+    assert.equal(input.listenerCount('graphics'), 0);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('scroll bursts coalesce without crossing ordered keyboard or click actions', async () => {
+  const dispatched = [];
+  const failures = [];
+  const queue = new ActionQueue(async (event) => dispatched.push(event), (error) => failures.push(error));
+  let release;
+  queue.add(() => new Promise((resolve) => { release = resolve; }));
+  const wheel = { type: 'mouseWheel', modifiers: 0, x: 10, y: 20, deltaX: 0, deltaY: 120 };
+  for (let i = 0; i < 100; i++) queue.mouse(wheel);
+  assert.equal(queue.items.length, 1);
+  queue.add(() => dispatched.push('key'));
+  queue.mouse({ ...wheel, deltaY: -120 });
+  queue.mouse({ type: 'mousePressed', button: 'left', buttons: 1, modifiers: 0 });
+  queue.mouse({ type: 'mouseMoved', buttons: 1, modifiers: 0, x: 1 });
+  queue.mouse({ type: 'mouseMoved', buttons: 1, modifiers: 0, x: 2 });
+  queue.mouse({ type: 'mouseReleased', button: 'left', buttons: 0, modifiers: 0 });
+  release();
+  await queue.idle;
+  assert.equal(dispatched[0].deltaY, 12000);
+  assert.equal(dispatched[1], 'key');
+  assert.equal(dispatched[2].deltaY, -120);
+  assert.equal(dispatched[3].type, 'mousePressed');
+  assert.equal(dispatched[4].x, 2);
+  assert.equal(dispatched[5].type, 'mouseReleased');
+  assert.deepEqual(failures, []);
+  await queue.close();
+});
+
+test('input errors stop queued actions instead of silently losing input', async () => {
+  const failures = [];
+  const queue = new ActionQueue(async () => { throw new Error('input failed'); }, (error) => failures.push(error));
+  queue.mouse({ type: 'mousePressed' });
+  queue.add(() => assert.fail('must not run'));
+  await queue.idle;
+  assert.equal(failures[0].message, 'input failed');
+  assert.equal(queue.closed, true);
 });
 
 test('terminal decoder handles split mouse, pixel geometry, paste, focus and Unicode', (t) => {
@@ -71,7 +176,7 @@ test('terminal decoder handles split mouse, pixel geometry, paste, focus and Uni
   assert.deepEqual(events.slice(0, 7), [
     ['mouse', 0, 5, 5, false], ['mouse', 0, 5, 5, true],
     ['geometry', { height: 20, width: 10 }], ['paste', 'hello \x03😀'],
-    ['focus', false], ['focus', true], ['graphics', 'OK'],
+    ['focus', false], ['focus', true], ['graphics', 'OK', { i: '1' }],
   ]);
   assert.deepEqual(events.filter(([kind]) => kind === 'key').map(([, text]) => text), ['é', '😀']);
 });
@@ -170,10 +275,41 @@ test('real Chrome: render, mouse, text, key focus, scrolling, errors and cleanup
       assert.fail(`Chrome did not reach expected state: ${expression}`);
     };
     await waitFor('!!document.querySelector("#entry")');
-    const png = Buffer.from(await browser.screenshot(), 'base64');
+    const streamErrors = [];
+    browser.on('Page.screencastFrame', (frame) => {
+      browser.send('Page.screencastFrameAck', { sessionId: frame.sessionId })
+        .catch((error) => { if (!browser.closed) streamErrors.push(error); });
+    });
+    const first = once(browser, 'Page.screencastFrame', { signal: AbortSignal.timeout(5000) });
+    await browser.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 });
+    const [frame] = await first;
+    const png = Buffer.from(frame.data, 'base64');
     assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
     assert.equal(png.readUInt32BE(16), 640);
     assert.equal(png.readUInt32BE(20), 352);
+    const frameOfSize = (width, height) => new Promise((resolve, reject) => {
+      const receive = (frame) => {
+        const header = Buffer.from(frame.data.slice(0, 32), 'base64');
+        if (header.readUInt32BE(16) === width && header.readUInt32BE(20) === height) {
+          clearTimeout(timer);
+          browser.off('Page.screencastFrame', receive);
+          resolve();
+        }
+      };
+      const timer = setTimeout(() => {
+        browser.off('Page.screencastFrame', receive);
+        reject(new Error(`No streamed frame at ${width}x${height}`));
+      }, 5000);
+      browser.on('Page.screencastFrame', receive);
+    });
+    const resized = frameOfSize(800, 400);
+    await browser.resize(800, 400);
+    await resized;
+    await browser.send('Page.stopScreencast');
+    await browser.resize(640, 352);
+    const resumed = frameOfSize(640, 352);
+    await browser.send('Page.startScreencast', { format: 'png', everyNthFrame: 1 });
+    await resumed;
     const view = viewport(80, 24);
     for (const released of [false, true]) {
       await browser.send('Input.dispatchMouseEvent', mouseEvent(0, 5, 5, released, view));
@@ -196,6 +332,8 @@ test('real Chrome: render, mouse, text, key focus, scrolling, errors and cleanup
     assert.equal(await evaluate('window.clicks'), 1);
     await browser.send('Input.dispatchMouseEvent', mouseEvent(65, 5, 9, false, view));
     await waitFor('window.scrollY > 0');
+    await browser.send('Page.stopScreencast');
+    assert.deepEqual(streamErrors, []);
     await assert.rejects(browser.send('NotARealDomain.invalid'), /wasn't found|not found/);
   } finally {
     if (browser) await browser.close();

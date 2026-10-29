@@ -132,7 +132,12 @@ Kitty graphics, forwarding mouse clicks, drags, wheel scrolling, typing, Tab and
 No herdr fork or Chrome extension is needed. Requirements: Node.js 22+ on `PATH`, Google
 Chrome in Applications (or `CHROME_BIN`), Ghostty, and herdr's default `terminal.kitty_graphics = true`.
 The helper requests cell pixel dimensions; if the terminal does not report them it uses 8x16.
-Frames refresh at up to about 5 fps, so this is not intended for animation/performance testing.
+Chrome streams changed frames rather than taking screenshots on a timer. The helper keeps only
+the latest frame, caps rendering at 30 fps, skips unchanged images, and pauses the stream when
+the terminal reports focus loss. PNGs travel through temporary files instead of being encoded
+into terminal output; each file is kept until herdr acknowledges loading it. Scroll and drag
+bursts are coalesced so stale input does not build up. Actual frame rate depends on page and
+terminal load; this is still not intended for animation/performance testing.
 
 - **Ctrl+O**: enter an `http://` or `https://` address, Enter to open, Esc to cancel, Ctrl+U to clear.
 - **Ctrl+R**: reload. **Ctrl+A** selects text in the focused field; use terminal paste to insert clipboard text.
