@@ -49,7 +49,7 @@ test('printable input, Unicode, Enter, navigation and modified keys', () => {
 test('Kitty frames transfer a file reference instead of image bytes through the terminal', () => {
   const path = '/tmp/chrome-frame.png';
   const output = kittyFrame(path, viewport(80, 24), 2);
-  assert.equal(output, `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=2,p=1,c=80,r=22,q=0;${Buffer.from(path).toString('base64')}\x1b\\`);
+  assert.equal(output, `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=2,p=1,C=1,c=80,r=22,q=0;${Buffer.from(path).toString('base64')}\x1b\\`);
   assert.ok(output.length < 200);
 });
 

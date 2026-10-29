@@ -142,7 +142,7 @@ export function viewport(columns, rows, cell = { width: 8, height: 16 }) {
 
 export function kittyFrame(path, view, id) {
   const encoded = Buffer.from(path).toString('base64');
-  return `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=${id},p=1,c=${view.columns},r=${view.rows},q=0;${encoded}\x1b\\`;
+  return `\x1b[3;1H\x1b_Ga=T,f=100,t=f,i=${id},p=1,C=1,c=${view.columns},r=${view.rows},q=0;${encoded}\x1b\\`;
 }
 
 export class LatestFrame {
