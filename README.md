@@ -13,6 +13,7 @@ The repo holds the *workflow*, not machine state. It has no repo names, no absol
 | `herdr/cheatsheet.txt` | `~/.config/herdr/cheatsheet.txt` | All keys on one page (`cmd+shift+h`) |
 | `herdr/agent` | `~/.config/herdr/agent` | Which agent chat tabs start (`claude`) |
 | `herdr/scripts/*.sh` | `~/.config/herdr/scripts/` | lazygit tab, jump to waiting agent, new chat/code tab, worktree layout |
+| `herdr/scripts/chrome-pane.mjs` | `~/.config/herdr/scripts/chrome-pane.mjs` | Experimental real Chrome page inside a terminal tab, launched by `chrome-pane.sh` |
 | `herdr/plugins/kris-tools/` | `~/.config/herdr/plugins/kris-tools/` | Local herdr plugin: lazygit pane + `worktree.created` hook |
 | `ghostty/config.ghostty` | `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty` | `cmd+…` shortcuts → herdr prefix sequences, font, theme |
 | `nvim/` | `~/.config/nvim/` | LazyVim starter + catppuccin, typescript/tailwind extras, `lazy-lock.json` |
@@ -119,6 +120,32 @@ herdr has no per-workspace colours, so `herdr/scripts/worktree-theme.py` writes 
 - Edit `~/.config/herdr/config.toml` as usual, then run **`herdr-reload`** (plain `herdr server reload-config` reloads the old generated copy).
 - To validate your edits: `env -u HERDR_CONFIG_PATH herdr config check`.
 - Name colours go onto `config.toml` rows marked `# worktree-colors`.
+
+## Experimental Chrome inside herdr
+
+**`cmd+/ B`** creates a `chrome` tab in the current workspace; select that tab to use it.
+It opens the worktree's registered port (main checkout: `8000`). For another address:
+`~/.config/herdr/scripts/chrome-pane.sh http://localhost:8012/`.
+
+This runs the installed Google Chrome headlessly and displays its real page rendering using
+Kitty graphics, forwarding mouse clicks, drags, wheel scrolling, typing, Tab and Shift+Tab.
+No herdr fork or Chrome extension is needed. Requirements: Node.js 22+ on `PATH`, Google
+Chrome in Applications (or `CHROME_BIN`), Ghostty, and herdr's default `terminal.kitty_graphics = true`.
+The helper requests cell pixel dimensions; if the terminal does not report them it uses 8x16.
+Frames refresh at up to about 5 fps, so this is not intended for animation/performance testing.
+
+- **Ctrl+O**: enter an `http://` or `https://` address, Enter to open, Esc to cancel, Ctrl+U to clear.
+- **Ctrl+R**: reload. **Ctrl+A** selects text in the focused field; use terminal paste to insert clipboard text.
+- **Ctrl+Q / Ctrl+C**: quit Chrome and return to the shell. These do not copy text.
+
+Each invocation uses a fresh temporary profile, removed on normal exit; your usual Chrome
+profile, tabs, logins and extensions are not used or changed. DevTools, the native Chrome
+toolbar, popup windows, file pickers and clipboard copying are not implemented; downloads
+are disabled. JavaScript dialogs can be accepted with Enter or dismissed with Esc, but
+prompt text is not supported. Screen-reader and final visual/accessibility testing still
+belong in normal Chrome. The existing **`cmd+/ t`** external Chrome groups are unchanged.
+
+Checks: `node --test tests/chrome-pane.test.mjs` (the real-browser test needs installed Chrome).
 
 ## Per-machine things (not in the repo)
 

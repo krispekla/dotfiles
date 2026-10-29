@@ -16,6 +16,7 @@ items=(
   "b|branch    right pane: everything this branch changed (again = close)"
   "n|notes     clear this worktree's hunk notes, saved ones too (asks first)"
   "t|chrome    tab group: Storybook + PR + task (work blue-ish, review purple-ish)"
+  "B|browser   experimental Chrome inside a herdr tab (isolated profile)"
   "a|agents    jump to the one waiting on you"
   "s|storybook restart in its tab, same port (no install/build)"
   "w|worktree  new worktree → chat | git | code | terminal"
@@ -185,6 +186,7 @@ run() {
     s) "$S/storybook-restart.sh" ;;
     n) clear_hunk_notes ;;
     t) "$S/chrome-group.sh" ;;
+    B) "$S/chrome-pane.sh" ;;
     w) new_worktree ;;
     x) remove_worktree ;;
     R) review_worktree ;;

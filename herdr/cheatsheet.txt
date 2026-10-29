@@ -29,6 +29,8 @@
    ticket tab     the branch's Jira ticket the same way (needs trac), work worktrees
    cmd+/ x        remove this worktree + close workspace (asks first)
    cmd+/ t        Chrome tab group: Storybook + this worktree's PR + task from its description
+   cmd+/ B        experimental Chrome inside herdr (select the new chrome tab)
+                  ctrl+o URL · ctrl+r reload · ctrl+q quit · mouse click/drag/scroll
    cmd+/ p        next colour for this space: project on main, own on a worktree (P = back)
 
  ── TABS ───────────────────────────────────────────────────────────

@@ -37,7 +37,7 @@ claude/settings.json|.claude/settings.json|merge
 aerospace/aerospace.toml|.config/aerospace/aerospace.toml|merge
 EOF
   # Scripts are linked one by one so their logs stay out of the repo
-  for f in "$REPO"/herdr/scripts/*.sh "$REPO"/herdr/scripts/*.py; do
+  for f in "$REPO"/herdr/scripts/*.sh "$REPO"/herdr/scripts/*.py "$REPO"/herdr/scripts/*.mjs; do
     [ -f "$f" ] && printf 'herdr/scripts/%s|.config/herdr/scripts/%s|link\n' "${f##*/}" "${f##*/}"
   done
 }
