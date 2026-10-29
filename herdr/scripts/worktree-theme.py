@@ -46,7 +46,6 @@ STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.join(HOME, ".lo
 REGISTRY = os.path.join(STATE, "ports")
 PROJECT_REGISTRY = os.path.join(STATE, "project-colours")
 WORKTREE_REGISTRY = os.path.join(STATE, "worktree-colours")
-LAYOUT_STATE = os.path.join(STATE, "sidebar-layout.json")  # name rows last reported to herdr
 HERDR = os.environ.get("HERDR_BIN_PATH") or "herdr"
 MARK = "# worktree-colors"
 
@@ -281,22 +280,12 @@ def sidebar_layout(workspaces, spaces, width):
 
 
 def apply_layout(tokens, moves):
-    """Report the name rows to herdr (only what changed since last time) and reorder reviews."""
-    try:
-        with open(LAYOUT_STATE) as f:
-            reported = json.load(f)
-    except (OSError, ValueError):
-        reported = {}
+    """Refresh name rows and reorder reviews. Herdr's metadata may be lost on restart."""
     for ws, values in tokens.items():
-        if reported.get(ws) == values:
-            continue
         args = ["workspace", "report-metadata", ws, "--source", "worktree-theme"]
         for key, value in values.items():
             args += ["--token", f"{key}={value}"] if value else ["--clear-token", key]
-        herdr(*args)
-    os.makedirs(STATE, exist_ok=True)
-    with open(LAYOUT_STATE, "w") as f:
-        json.dump(tokens, f)
+        subprocess.run([HERDR, *args], check=True, stdout=subprocess.DEVNULL, timeout=5)
     for reviews, before in moves:
         api("workspace.move_block", {"workspace_ids": reviews, "before_workspace_id": before})
 
