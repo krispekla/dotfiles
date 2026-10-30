@@ -7,6 +7,14 @@
 # q in hunk still closes the pane: only a memory restart starts it again.
 mode=$1
 shift
+# herdr passes on the PATH of the shell it was started from, which can hold an older Node:
+# put nvm's default first, for hunk itself and for git hooks (husky runs npx and yarn)
+v=$(cat "$HOME/.nvm/alias/default" 2>/dev/null)
+if [ -d "$HOME/.nvm/versions/node/v$v/bin" ]; then
+  PATH="$HOME/.nvm/versions/node/v$v/bin:$PATH"
+elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh" --no-use && nvm use --silent default >/dev/null 2>&1
+fi
 S="$HOME/.config/herdr/scripts"
 dir="$(git rev-parse --path-format=absolute --git-dir)/hunk-notes"
 panes="${XDG_STATE_HOME:-$HOME/.local/state}/herdr/hunk-panes"

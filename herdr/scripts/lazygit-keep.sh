@@ -6,6 +6,14 @@
 #   - every few hours, as prevention (long-running lazygit has crashed after a day): only
 #     when it has run REFRESH_HOURS (default 4), you aren't looking at its tab, and no
 #     rebase / merge / cherry-pick / revert or index.lock is in progress. Checked every 10 min.
+# herdr passes on the PATH of the shell it was started from, which can hold an older Node:
+# put nvm's default first, for hunk itself and for git hooks (husky runs npx and yarn)
+v=$(cat "$HOME/.nvm/alias/default" 2>/dev/null)
+if [ -d "$HOME/.nvm/versions/node/v$v/bin" ]; then
+  PATH="$HOME/.nvm/versions/node/v$v/bin:$PATH"
+elif [ -s "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh" --no-use && nvm use --silent default >/dev/null 2>&1
+fi
 log="$HOME/.config/herdr/scripts/lazygit-crash.log"
 out="${TMPDIR:-/tmp}/lazygit-stderr-$$"
 refresh="${TMPDIR:-/tmp}/lazygit-refresh-$$"

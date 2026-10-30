@@ -14,7 +14,9 @@ the pane closes, crashes or restarts (modem-dev/hunk#113).
       Clears the notes of the worktree's live Hunk sessions and its saved notes files.
 
 Saved notes come back as agent notes (Hunk has no way to add user notes); the user's keep
-author "you" so they can still be told apart. A note whose line isn't in the diff right now
+author "you" so they can still be told apart. Only notes the session doesn't hold yet come back,
+and repeats (same line, text and parent text) are removed from the session and the file, so a
+pane restored twice doesn't double its notes. A note whose line isn't in the diff right now
 stays in the file and is tried again on the next start, until the notes are cleared.
 """
 import fcntl
@@ -93,12 +95,75 @@ def item(note):
     return out
 
 
-def restore(session_id, saved):
-    """Add saved notes back, roots first, then replies under their restored parents. One note
-    per call: a batch fails as a whole if any note's line has left the diff. Returns the notes
-    that couldn't be placed."""
-    new_id, unplaced = {}, []
+def anchor(note):
+    return note.get("filePath"), (note.get("newRange") or note.get("oldRange") or [None])[0]
+
+
+def text(note):
+    return (note.get("body") or "").strip()
+
+
+def keys(notes):
+    """noteId -> what makes two notes the same: line and text, and for a reply its parent's
+    text too, so two findings on one line can each keep their own "ok"."""
+    by_id = {n["noteId"]: n for n in notes}
+    return {n["noteId"]: (*anchor(n), text(by_id[parent_of(n)]) if parent_of(n) in by_id
+                          else ("(gone)" if parent_of(n) else None), text(n)) for n in notes}
+
+
+def unique(notes):
+    """The notes without repeats. A reply under a dropped repeat moves to the kept copy (its
+    parentId changes); a reply whose parent is gone is dropped when its line has that reply."""
+    key, alias, kept, out = keys(notes), {}, {}, []
+    for note in sorted(notes, key=lambda n: parent_of(n) is not None):
+        k = key[note["noteId"]]
+        if k in kept:
+            alias[note["noteId"]] = kept[k]
+            continue
+        kept[k] = note["noteId"]
+        if parent_of(note) in alias:
+            note = {**note, "parentId": alias[parent_of(note)]}
+        out.append(note)
+    replies = {(*anchor(n), text(n)) for n in out if parent_of(n) and key[n["noteId"]][2] != "(gone)"}
+    return [n for n in out if key[n["noteId"]][2] != "(gone)" or (*anchor(n), text(n)) not in replies]
+
+
+def apply(session_id, note, target):
+    res = run("hunk", "session", "comment", "apply", session_id, "--stdin", "--json",
+              stdin=json.dumps({"comments": [{**target, **item(note)}]}))
+    applied = ((res or {}).get("result") or {}).get("applied") or []
+    return applied[0]["commentId"] if applied else None
+
+
+def dedupe(session_id, current):
+    """Remove repeated notes from a live session: replies first, as Hunk keeps a note that
+    still has replies. A distinct reply under a repeat is added again under the kept copy."""
+    keep = unique(current)
+    was_under = {n["noteId"]: parent_of(n) for n in current}
+    drop = set(was_under) - {n["noteId"] for n in keep}
+    for note in keep:
+        if parent_of(note) != was_under[note["noteId"]]:
+            if apply(session_id, note, {"replyTo": parent_of(note)}):
+                drop.add(note["noteId"])
+            else:
+                drop.discard(was_under[note["noteId"]])  # its parent can't go while it stays
+    for note in sorted(current, key=lambda n: parent_of(n) is None):
+        if note["noteId"] in drop:
+            run("hunk", "session", "comment", "rm", session_id, note["noteId"], "--json")
+
+
+def restore(session_id, saved, current):
+    """Add saved notes back that the session doesn't hold yet (a pane can be restored twice:
+    the saver restarted, or a `session list` missed it), roots first, then replies under their
+    parents. One note per call: a batch fails as a whole if any note's line has left the diff.
+    Returns the notes that couldn't be placed."""
+    saved = unique(saved)
+    have = {k: i for i, k in keys(current).items()}
+    new_id, unplaced, key = {}, [], keys(saved)
     for note in sorted(saved, key=lambda n: parent_of(n) is not None):
+        if key[note["noteId"]] in have:
+            new_id[note["noteId"]] = have[key[note["noteId"]]]
+            continue
         if parent_of(note):
             if parent_of(note) not in new_id:
                 unplaced.append(note)
@@ -110,11 +175,9 @@ def restore(session_id, saved):
             if not note.get("filePath") or line is None:
                 continue
             target = {"filePath": note["filePath"], side: line}
-        res = run("hunk", "session", "comment", "apply", session_id, "--stdin", "--json",
-                  stdin=json.dumps({"comments": [{**target, **item(note)}]}))
-        applied = ((res or {}).get("result") or {}).get("applied") or []
-        if applied:
-            new_id[note["noteId"]] = applied[0]["commentId"]
+        new = apply(session_id, note, target)
+        if new:
+            new_id[note["noteId"]] = new
         else:
             unplaced.append(note)
     return unplaced
@@ -166,22 +229,28 @@ def watch():
             last_seen = time.time()
         elif time.time() - last_seen > 60:
             return
-        sessions = (run("hunk", "session", "list", "--json") or {}).get("sessions", [])
+        listing = run("hunk", "session", "list", "--json")
+        if listing is None:  # a failed call lists no session: forgetting them all would restore them again
+            continue
+        sessions = listing.get("sessions", [])
         for s in sessions:
             wrapper = wrapper_of(s["pid"], wrappers)
             if not wrapper:
                 continue
             path, max_mb, flag = wrappers[wrapper]
             state = known.get(s["sessionId"])
-            if state is None:  # new pane, or hunk restarted: put the saved notes back
-                state = known[s["sessionId"]] = {"file": path, "unplaced": restore(s["sessionId"], load(path)), "last": None}
-                continue  # the snapshot doesn't have the restored notes yet; save next round
             current = s.get("snapshot", {}).get("state", {}).get("reviewNotes", [])
+            if state is None:  # new pane, or hunk restarted: put the saved notes back
+                if len(unique(current)) < len(current):
+                    dedupe(s["sessionId"], current)
+                state = known[s["sessionId"]] = {"file": path, "unplaced": restore(s["sessionId"], load(path), unique(current)), "last": None}
+                continue  # the snapshot doesn't have the restored notes yet; save next round
             if state["last"] is not None and not os.path.exists(path):  # cleared (cmd+/ n)
                 state["unplaced"] = []
-            if current + state["unplaced"] != state["last"]:
-                save(path, current + state["unplaced"])
-                state["last"] = current + state["unplaced"]
+            notes = unique(current + state["unplaced"])
+            if notes != state["last"]:
+                save(path, notes)
+                state["last"] = notes
             if (ps(s["pid"], "rss") or 0) // 1024 > max_mb:
                 open(flag, "w").close()
                 os.kill(s["pid"], signal.SIGTERM)
