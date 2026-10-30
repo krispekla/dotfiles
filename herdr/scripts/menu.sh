@@ -64,7 +64,7 @@ new_worktree() {
 # Letter runs one directly; j/k or arrows move; esc or q goes back to the menu.
 # Row: letter|name shown|tab label|command
 chat_agents=(
-  "c|Claude|chatc|$(cat "$HOME/.config/herdr/agent" 2>/dev/null || echo claude)"
+  "c|Claude|chatc|claude"
   "o|Copilot|chatg|copilot"
 )
 
